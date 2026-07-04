@@ -2,6 +2,8 @@
 
 A collection of speech and presentation transcripts by JR Ridinger, founder, chairman, and CEO of Market America | SHOP.COM. Transcripts were extracted from PDF sources and are stored as Markdown in the [`transcripts/`](transcripts/) directory.
 
+**中文重點總覽**：[docs/transcript-summaries.md](docs/transcript-summaries.md) — 全部 27 篇的核心重點、經典金句/故事、可回答的典型問題（依主題分類），作為零售/招募/異議處理問答網站的知識庫基礎。
+
 ## Index
 
 | Transcript | Description |
