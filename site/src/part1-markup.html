@@ -1,0 +1,286 @@
+<title>JR 智庫 — 美安事業問答知識庫</title>
+<style>
+:root{
+  --paper:#f6f5f1; --surface:#ffffff; --ink:#1c2637; --muted:#5d6a7e;
+  --accent:#24598f; --accent-ink:#ffffff; --gold:#a97c2f; --gold-soft:#f3ead8;
+  --line:#dcd9d0; --chip:#eceae3; --good:#2e7d4f; --warn:#b3541e;
+  --shadow:0 1px 3px rgba(28,38,55,.08),0 4px 14px rgba(28,38,55,.06);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#131a25; --surface:#1b2434; --ink:#e7ebf2; --muted:#9aa7ba;
+    --accent:#6da3d8; --accent-ink:#0f1826; --gold:#d0a45a; --gold-soft:#2a2517;
+    --line:#2c3649; --chip:#242f42; --good:#6fbf8f; --warn:#e08a55;
+    --shadow:0 1px 3px rgba(0,0,0,.35),0 4px 14px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131a25; --surface:#1b2434; --ink:#e7ebf2; --muted:#9aa7ba;
+  --accent:#6da3d8; --accent-ink:#0f1826; --gold:#d0a45a; --gold-soft:#2a2517;
+  --line:#2c3649; --chip:#242f42; --good:#6fbf8f; --warn:#e08a55;
+  --shadow:0 1px 3px rgba(0,0,0,.35),0 4px 14px rgba(0,0,0,.25);
+}
+:root[data-theme="light"]{
+  --paper:#f6f5f1; --surface:#ffffff; --ink:#1c2637; --muted:#5d6a7e;
+  --accent:#24598f; --accent-ink:#ffffff; --gold:#a97c2f; --gold-soft:#f3ead8;
+  --line:#dcd9d0; --chip:#eceae3; --good:#2e7d4f; --warn:#b3541e;
+  --shadow:0 1px 3px rgba(28,38,55,.08),0 4px 14px rgba(28,38,55,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",system-ui,sans-serif;
+  font-size:16px; line-height:1.75;
+}
+.serif{font-family:"Songti TC","Noto Serif TC","PMingLiU",serif}
+#topbar{
+  position:sticky; top:0; z-index:50; background:var(--paper);
+  border-bottom:1px solid var(--line);
+}
+.tb-inner{max-width:1080px;margin:0 auto;padding:14px 16px 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:22px;letter-spacing:1px}
+.brand h1 .serif{color:var(--gold)}
+.brand small{color:var(--muted);font-size:13px;letter-spacing:.5px}
+#tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto; padding:9px 14px 11px; border:none; background:none; cursor:pointer;
+  color:var(--muted); font-size:15px; font-family:inherit;
+  border-bottom:3px solid transparent; white-space:nowrap;
+}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--accent); border-bottom-color:var(--accent); font-weight:700}
+.tab:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{max-width:1080px;margin:0 auto;padding:22px 16px 80px}
+.view{display:none}
+.view.on{display:block}
+h2.vh{font-size:20px;margin:0 0 4px}
+p.vd{color:var(--muted);margin:0 0 18px;font-size:14.5px;max-width:46em}
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px 20px; box-shadow:var(--shadow); margin-bottom:14px;
+}
+.card h3{margin:0 0 6px;font-size:16.5px}
+.card .src{color:var(--muted);font-size:13px;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.chip{
+  background:var(--chip); color:var(--muted); border-radius:999px; padding:2px 11px;
+  font-size:12.5px; border:none; cursor:pointer; font-family:inherit;
+}
+.chip.on,.chip:hover{color:var(--accent)}
+.chip.static{cursor:default}
+.chip.static:hover{color:var(--muted)}
+.actions{display:flex;gap:10px;margin-top:10px}
+.abtn{
+  border:1px solid var(--line); background:none; color:var(--muted); cursor:pointer;
+  border-radius:7px; padding:4px 12px; font-size:13px; font-family:inherit;
+}
+.abtn:hover{color:var(--accent);border-color:var(--accent)}
+.abtn.faved{color:var(--gold);border-color:var(--gold)}
+.quote{
+  border-left:3px solid var(--gold); background:var(--gold-soft);
+  padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:15px;
+}
+.searchbox{display:flex;gap:10px;margin:0 0 14px}
+.searchbox input{
+  flex:1; padding:12px 16px; font-size:16px; border:1.5px solid var(--line);
+  border-radius:var(--radius); background:var(--surface); color:var(--ink); font-family:inherit;
+}
+.searchbox button{
+  padding:12px 22px; font-size:15.5px; border:none; border-radius:var(--radius);
+  background:var(--accent); color:var(--accent-ink); cursor:pointer; font-family:inherit; font-weight:700;
+}
+.hint{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.secttl{
+  font-size:13px; letter-spacing:2px; color:var(--gold); text-transform:uppercase;
+  margin:26px 0 10px; font-weight:700;
+}
+details.qa{border-bottom:1px solid var(--line)}
+details.qa summary{
+  cursor:pointer; padding:13px 4px; font-weight:700; font-size:15.5px; list-style:none;
+  display:flex; justify-content:space-between; gap:10px; align-items:baseline;
+}
+details.qa summary::after{content:"＋";color:var(--muted);flex:0 0 auto}
+details.qa[open] summary::after{content:"－"}
+details.qa .qa-body{padding:0 4px 16px}
+.answer-label{font-size:12.5px;letter-spacing:1.5px;color:var(--gold);font-weight:700}
+/* chat */
+#chatlog{display:flex;flex-direction:column;gap:12px;margin-bottom:14px;min-height:120px}
+.msg{max-width:88%;padding:12px 16px;border-radius:14px;font-size:15px}
+.msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.msg.jr{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.msg.jr .who{font-size:12.5px;color:var(--gold);letter-spacing:1.5px;font-weight:700;margin-bottom:4px}
+.chatform{display:flex;gap:10px}
+.chatform input{flex:1;padding:12px 16px;font-size:16px;border:1.5px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink);font-family:inherit}
+.chatform button{padding:12px 20px;border:none;border-radius:var(--radius);background:var(--accent);color:var(--accent-ink);cursor:pointer;font-family:inherit;font-weight:700;font-size:15px}
+.quickq{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+/* sop */
+.sopstep{display:flex;gap:16px;margin-bottom:0;position:relative;padding-bottom:22px}
+.sopstep::before{content:"";position:absolute;left:17px;top:38px;bottom:0;width:2px;background:var(--line)}
+.sopstep:last-child::before{display:none}
+.sopnum{
+  flex:0 0 36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;
+  font-variant-numeric:tabular-nums;
+}
+.sopstep .card{flex:1;margin-bottom:0}
+.warnbox{border-left:3px solid var(--warn);background:var(--chip);padding:8px 12px;border-radius:0 8px 8px 0;font-size:14px;margin-top:8px}
+/* tracker */
+.trk-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.trk-day{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.trk-day small{font-size:14px;color:var(--muted);font-weight:400}
+.bar{flex:1;min-width:180px;height:10px;background:var(--chip);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
+.ck{display:flex;align-items:flex-start;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.ck input{width:20px;height:20px;margin-top:4px;accent-color:var(--accent);flex:0 0 auto}
+.ck.done .ck-t{text-decoration:line-through;color:var(--muted)}
+.ck-t b{display:block;font-size:15.5px}
+.ck-t span{font-size:13.5px;color:var(--muted)}
+#daygrid{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-top:14px}
+#daygrid div{aspect-ratio:1;border-radius:4px;background:var(--chip);font-size:0}
+#daygrid div.p1{background:color-mix(in srgb,var(--accent) 35%,var(--chip))}
+#daygrid div.p2{background:color-mix(in srgb,var(--accent) 70%,var(--chip))}
+#daygrid div.p3{background:var(--accent)}
+#daygrid div.today{outline:2px solid var(--gold)}
+/* quiz */
+.qz-rate{display:flex;gap:8px;margin-top:10px}
+.qz-rate button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-family:inherit;font-size:14px}
+.qz-rate button.sel-0{background:var(--chip);color:var(--ink);border-color:var(--muted)}
+.qz-rate button.sel-1{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.qz-rate button.sel-2{background:color-mix(in srgb,var(--good) 15%,var(--surface));color:var(--good);border-color:var(--good)}
+/* script generator */
+.scen-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:18px}
+.scen-pick button{
+  text-align:left;padding:14px 16px;border-radius:var(--radius);border:1.5px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer;font-family:inherit;font-size:15px;box-shadow:var(--shadow);
+}
+.scen-pick button.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.script-sec{margin-bottom:14px}
+.script-sec .answer-label{display:block;margin-bottom:4px}
+.empty{color:var(--muted);text-align:center;padding:40px 0;font-size:15px}
+#toast{
+  position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:var(--paper);padding:9px 20px;border-radius:999px;font-size:14px;
+  opacity:0;pointer-events:none;transition:all .25s;z-index:99;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="topbar">
+  <div class="tb-inner">
+    <div class="brand">
+      <h1><span class="serif">JR 智庫</span></h1>
+      <small>美安創辦人 JR Ridinger 27 篇演講知識庫 · 零售 × 招募 × 異議處理</small>
+    </div>
+    <nav id="tabs" aria-label="主選單"></nav>
+  </div>
+</div>
+
+<main>
+  <!-- 搜尋 -->
+  <section class="view" id="v-search">
+    <h2 class="vh">遇到問題？先搜這裡</h2>
+    <p class="vd">輸入你遇到的實際狀況（例如「夥伴說他不認識人」「被問是不是老鼠會」），系統會從 JR 的 27 篇演講中找出對應的做法、故事與原始出處。</p>
+    <div class="searchbox">
+      <input id="q" type="search" placeholder="描述你的問題…" aria-label="搜尋問題">
+      <button id="qbtn">搜尋</button>
+    </div>
+    <div class="hint">熱門搜尋：<span id="hotq"></span></div>
+    <div id="results"></div>
+  </section>
+
+  <!-- 異議處理 -->
+  <section class="view" id="v-objections">
+    <h2 class="vh">異議處理速查表</h2>
+    <p class="vd">每一張卡片＝一個常見異議 ＋ JR 的回應方式 ＋ 背後邏輯 ＋ 可搭配的故事。點標籤可篩選。</p>
+    <div class="tagrow" id="obj-filter"></div>
+    <div style="margin-top:16px" id="obj-list"></div>
+  </section>
+
+  <!-- 主題瀏覽 -->
+  <section class="view" id="v-browse">
+    <h2 class="vh">27 篇演講主題瀏覽</h2>
+    <p class="vd">依主題分類的全部演講重點。每篇含核心教學與代表金句。</p>
+    <div class="tagrow" id="tr-filter"></div>
+    <div style="margin-top:16px" id="tr-list"></div>
+  </section>
+
+  <!-- JR 智囊 -->
+  <section class="view" id="v-chat">
+    <h2 class="vh">JR 智囊</h2>
+    <p class="vd">用對話方式提問，智囊會依 JR 的教導回答並附上出處。（回答內容全部取自 27 篇演講的整理，不是外部 AI 生成。）</p>
+    <div class="quickq" id="quickq"></div>
+    <div id="chatlog" aria-live="polite"></div>
+    <form class="chatform" id="chatform">
+      <input id="chatin" type="text" placeholder="請問 JR 會怎麼做…" aria-label="輸入問題">
+      <button type="submit">送出</button>
+    </form>
+  </section>
+
+  <!-- 劇本產生器 -->
+  <section class="view" id="v-script">
+    <h2 class="vh">情境劇本產生器</h2>
+    <p class="vd">選擇你明天要面對的情境，產出 JR 式的對話劇本：開場、關鍵句、可用故事、收尾與地雷。</p>
+    <div class="scen-pick" id="scen-pick"></div>
+    <div id="scen-out"></div>
+  </section>
+
+  <!-- 金句故事庫 -->
+  <section class="view" id="v-stories">
+    <h2 class="vh">金句／故事庫</h2>
+    <p class="vd">JR 的招牌比喻與故事，每則附「什麼時候講、講給誰聽」。上台、一對一、輔導夥伴時直接取用。</p>
+    <div class="tagrow" id="st-filter"></div>
+    <div style="margin-top:16px" class="grid2" id="st-list"></div>
+  </section>
+
+  <!-- 90天追蹤 -->
+  <section class="view" id="v-tracker">
+    <h2 class="vh">90 天快速起步追蹤器</h2>
+    <p class="vd">JR 說：每個成功者的歷史裡都有瘋狂的 90 天。每天完成基本動作並打卡——每日目標自動加總成每週、每月目標。</p>
+    <div class="card">
+      <div class="trk-head">
+        <div class="trk-day"><span id="trk-daynum">–</span><small> / 90 天</small></div>
+        <div class="bar"><i id="trk-bar" style="width:0%"></i></div>
+        <button class="abtn" id="trk-reset">重新開始 90 天</button>
+      </div>
+      <div id="trk-checks"></div>
+      <div class="secttl">90 天進度圖（顏色深度＝當日完成度）</div>
+      <div id="daygrid"></div>
+    </div>
+    <div class="card">
+      <h3>JR 的每日基本功出處</h3>
+      <p style="margin:6px 0;font-size:14.5px">「大腦無法接受『一年找 16 個人』，但能接受『每天交兩個朋友』。每日目標自動加總成每週目標、每月目標、年度目標——邏輯到位，大腦就接受。」</p>
+      <div class="src">出處：讓自己成為無可救藥的成功者（programming-yourself-to-be-a-hopeless-success）、基本五項（basic-5-original）、90 天快速起步（90-day-fast-track）</div>
+    </div>
+  </section>
+
+  <!-- 帶人SOP -->
+  <section class="view" id="v-sop">
+    <h2 class="vh">新人帶人 SOP 流程</h2>
+    <p class="vd">JR 的完整帶人流程——從填滿漏斗到 ABC 複製。「任何阻止『人帶出人』的做法，都是錯的做法。」每一步都附常見錯誤。</p>
+    <div id="sop-list"></div>
+  </section>
+
+  <!-- 主題測驗 -->
+  <section class="view" id="v-quiz">
+    <h2 class="vh">主題測驗（Themes Quiz）</h2>
+    <p class="vd">JR 在「成為招募大師」中的原話：「你能不能把每個主題寫成一段話？寫不出來，你就還沒準備好建這個事業。這個考試通過了會讓你賺錢。」先自己回答，再展開 JR 的版本對照，最後自評。</p>
+    <div id="qz-score" class="hint"></div>
+    <div id="qz-list"></div>
+  </section>
+
+  <!-- 收藏 -->
+  <section class="view" id="v-fav">
+    <h2 class="vh">我的收藏</h2>
+    <p class="vd">收藏過的問答、故事與演講都在這裡。用「分享」把內容傳給夥伴——讓工具替你複製。</p>
+    <div id="fav-list"></div>
+  </section>
+</main>
+
+<div id="toast" role="status"></div>

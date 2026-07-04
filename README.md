@@ -4,6 +4,8 @@ A collection of speech and presentation transcripts by JR Ridinger, founder, cha
 
 **中文重點總覽**：[docs/transcript-summaries.md](docs/transcript-summaries.md) — 全部 27 篇的核心重點、經典金句/故事、可回答的典型問題（依主題分類），作為零售/招募/異議處理問答網站的知識庫基礎。
 
+**JR 智庫網站**：[site/index.html](site/index.html) — 單一檔案、免伺服器的問答知識庫網站（繁體中文、支援手機與深淺色主題）。功能：問題搜尋、異議處理速查、JR 智囊對話、情境劇本產生器、金句故事庫、27 篇演講瀏覽、帶人 SOP、90 天打卡追蹤、主題測驗、收藏與分享。原始碼在 `site/src/`（三個部分組合而成），修改後執行 `cat src/part1-markup.html src/part2-data.js src/part3-app.js > artifact.html` 再包上 HTML 外殼即可重建。
+
 ## Index
 
 | Transcript | Description |
