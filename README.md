@@ -26,6 +26,11 @@ A collection of speech and presentation transcripts by JR Ridinger, founder, cha
 | [Recruiting](transcripts/recruiting.md) | On recruiting and building the organization. |
 | [The Coffin](transcripts/the-coffin.md) | Coffin monologue on death, legacy, and doing more with the dash. |
 | [The Dash](transcripts/the-dash.md) | Convention closing on the dash between birth and death: attitude, belief, conviction, and the paradigm shift. |
+| [The Most Incredible System](transcripts/the-most-incredible-system.md) | On the UnFranchise system and why it works. |
+| [The Pumps](transcripts/the-pumps.md) | The pump-priming analogy: putting in the work before the stream of wealth flows. |
+| [The Shopping Annuity](transcripts/the-shopping-annuity.md) | The shopping annuity concept: converting spending into earning. |
+| [The Tombstone](transcripts/the-tombstone.md) | The tombstone reflection on mortality and living your dreams now. |
+| [The Wrong Way](transcripts/the-wrong-way.md) | On the wrong way to build the business and what to do instead. |
 
 ## File format
 
