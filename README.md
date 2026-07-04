@@ -21,6 +21,11 @@ A collection of speech and presentation transcripts by JR Ridinger, founder, cha
 | [Master Building Techniques](transcripts/master-building-techniques.md) | Techniques for master builders of the business. |
 | [Method to the Madness (1998)](transcripts/method-to-the-madness-1998.md) | 1998 talk on the method behind the business-building system. |
 | [Monopolization and Abuse of Mass Distribution](transcripts/monopolization-and-abuse-of-mass-distribution.md) | On mass distribution, mass marketing, and the case for the UnFranchise model. |
+| [Programming the Brain and Creating Your Identity](transcripts/programming-the-brain-and-creating-your-identity.md) | Identity controls behavior: programming the brain through visualization, belief, and acceptance. |
+| [Programming Yourself to Be a Hopeless Success](transcripts/programming-yourself-to-be-a-hopeless-success.md) | On programming yourself so success becomes inevitable. |
+| [Recruiting](transcripts/recruiting.md) | On recruiting and building the organization. |
+| [The Coffin](transcripts/the-coffin.md) | Coffin monologue on death, legacy, and doing more with the dash. |
+| [The Dash](transcripts/the-dash.md) | Convention closing on the dash between birth and death: attitude, belief, conviction, and the paradigm shift. |
 
 ## File format
 
