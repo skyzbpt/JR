@@ -1,17 +1,48 @@
 <script>
 /* ===================== 應用邏輯 ===================== */
 
+/* ---------- SVG 圖示庫 ---------- */
+const ICONS = {
+ search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>',
+ shield:'<path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/>',
+ chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
+ clapper:'<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+ sparkle:'<path d="M12 3l1.9 5.9 5.9 2.1-5.9 2.1L12 19l-1.9-5.9L4.2 11l5.9-2.1z"/>',
+ book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+ route:'<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+ calcheck:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+ clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+ star:'<path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6L12 16.8l-5.4 2.8 1-6L3.3 9.4l6-.9z"/>',
+ compass:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+ bulb:'<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
+ warn:'<path d="M10.3 3.8 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+ share:'<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+ menu:'<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+ close:'<line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/>',
+ userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
+ users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+ home:'<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+ hourglass:'<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22"/><path d="M7 2v4.2c0 .5.2 1 .6 1.4L12 12l4.4-4.4c.4-.4.6-.9.6-1.4V2"/>',
+ help:'<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-2.9 2.6-2.9 4"/><line x1="12" y1="17.5" x2="12.01" y2="17.5"/>',
+ award:'<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+ bag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+ rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.18 2.18 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2z"/><path d="M9 12H4s.5-3 2-4c1.6-1.1 5 0 5 0"/><path d="M12 15v5s3-.5 4-2c1.1-1.6 0-5 0-5"/>',
+ refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 21H3v-5"/>',
+ copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+};
+function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
+
 const TABS = [
- {id:"search",  l:"🔍 搜尋"},
- {id:"objections",l:"🛡️ 異議處理"},
- {id:"chat",    l:"💬 JR 智囊"},
- {id:"script",  l:"🎭 劇本產生器"},
- {id:"stories", l:"✨ 金句故事"},
- {id:"browse",  l:"📚 27 篇演講"},
- {id:"sop",     l:"🗺️ 帶人 SOP"},
- {id:"tracker", l:"✅ 90 天打卡"},
- {id:"quiz",    l:"📝 主題測驗"},
- {id:"fav",     l:"⭐ 收藏"},
+ {id:"search",  l:"搜尋",        ic:"search"},
+ {id:"objections",l:"異議處理",  ic:"shield"},
+ {id:"chat",    l:"JR 智囊",     ic:"chat"},
+ {id:"script",  l:"劇本產生器",  ic:"clapper"},
+ {id:"stories", l:"金句故事",    ic:"sparkle"},
+ {id:"browse",  l:"27 篇演講",   ic:"book"},
+ {id:"sop",     l:"帶人 SOP",    ic:"route"},
+ {id:"tracker", l:"90 天打卡",   ic:"calcheck"},
+ {id:"quiz",    l:"主題測驗",    ic:"clipboard"},
+ {id:"fav",     l:"收藏",        ic:"star"},
 ];
 
 const $ = s=>document.querySelector(s);
@@ -22,22 +53,36 @@ const store = {
 };
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._x);toast._x=setTimeout(()=>t.classList.remove("show"),1800);}
 
-/* ---------- 導覽 ---------- */
+/* ---------- 導覽（頁籤 + 抽屜選單） ---------- */
 const tabsEl = $("#tabs");
+const drawerItems = $("#drawer-items");
 TABS.forEach(t=>{
-  const b=el("button","tab",t.l); b.id="tab-"+t.id;
+  const b=el("button","tab",icon(t.ic)+t.l); b.id="tab-"+t.id;
   b.addEventListener("click",()=>show(t.id));
   tabsEl.appendChild(b);
+  const d=el("button","drawer-item",icon(t.ic)+t.l); d.id="ditem-"+t.id;
+  d.addEventListener("click",()=>{show(t.id);closeMenu();});
+  drawerItems.appendChild(d);
 });
 function show(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
-  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+  document.querySelectorAll(".tab,.drawer-item").forEach(b=>b.classList.remove("on"));
   $("#v-"+id).classList.add("on"); $("#tab-"+id).classList.add("on");
+  const di=$("#ditem-"+id); if(di)di.classList.add("on");
   if(id==="fav") renderFav();
   if(id==="tracker") renderTracker();
   try{history.replaceState(null,"","#"+id);}catch(e){}
   window.scrollTo({top:0});
 }
+/* 選單開關 */
+const menubtn=$("#menubtn"), drawer=$("#drawer"), backdrop=$("#backdrop");
+menubtn.innerHTML=icon("menu")+"選單";
+$("#drawer-close").innerHTML=icon("close");
+function openMenu(){drawer.classList.add("open");backdrop.classList.add("open");drawer.setAttribute("aria-hidden","false");menubtn.setAttribute("aria-expanded","true");}
+function closeMenu(){drawer.classList.remove("open");backdrop.classList.remove("open");drawer.setAttribute("aria-hidden","true");menubtn.setAttribute("aria-expanded","false");}
+menubtn.addEventListener("click",()=>drawer.classList.contains("open")?closeMenu():openMenu());
+backdrop.addEventListener("click",closeMenu);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
 
 /* ---------- 收藏 / 分享 ---------- */
 function favKey(type,id){return type+":"+id;}
@@ -45,21 +90,21 @@ function isFaved(type,id){return store.get("jrfav",[]).includes(favKey(type,id))
 function toggleFav(type,id,btn){
   let f=store.get("jrfav",[]); const k=favKey(type,id);
   if(f.includes(k)){f=f.filter(x=>x!==k);toast("已取消收藏");}
-  else{f.push(k);toast("已收藏 ⭐");}
+  else{f.push(k);toast("已收藏");}
   store.set("jrfav",f);
-  if(btn){btn.classList.toggle("faved");btn.textContent=btn.classList.contains("faved")?"⭐ 已收藏":"☆ 收藏";}
+  if(btn){btn.classList.toggle("faved");btn.innerHTML=btn.classList.contains("faved")?icon("star","fill")+"已收藏":icon("star")+"收藏";}
 }
 async function shareText(text){
   const full=text+"\n\n—— 出自 JR 智庫（JR Ridinger 演講知識庫）";
   if(navigator.share){try{await navigator.share({text:full});return;}catch(e){if(e.name==="AbortError")return;}}
-  try{await navigator.clipboard.writeText(full);toast("已複製，直接貼給夥伴 📋");}
+  try{await navigator.clipboard.writeText(full);toast("已複製，直接貼給夥伴");}
   catch(e){toast("複製失敗，請手動選取文字");}
 }
 function actionRow(type,id,shareStr){
   const row=el("div","actions");
-  const fb=el("button","abtn"+(isFaved(type,id)?" faved":""),isFaved(type,id)?"⭐ 已收藏":"☆ 收藏");
+  const fb=el("button","abtn"+(isFaved(type,id)?" faved":""),icon("star",isFaved(type,id)?"fill":"")+(isFaved(type,id)?"已收藏":"收藏"));
   fb.addEventListener("click",()=>toggleFav(type,id,fb));
-  const sb=el("button","abtn","📤 分享");
+  const sb=el("button","abtn",icon("share")+"分享");
   sb.addEventListener("click",()=>shareText(shareStr));
   row.append(fb,sb); return row;
 }
@@ -103,17 +148,17 @@ function srcLinks(srcs){
 }
 function qaCard(it,i){
   const c=el("div","card");
-  c.appendChild(el("h3",null,(it.type==="obj"?"🛡️ ":"🧭 ")+it.q));
+  c.appendChild(el("h3",null,(it.type==="obj"?icon("shield"):icon("compass"))+" "+it.q));
   c.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
   c.appendChild(el("p",null,it.a));
-  if(it.story)c.appendChild(el("div","quote","🎁 可搭配的故事：<b>"+it.story+"</b>（到「金句故事」查完整版）"));
+  if(it.story)c.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事：<b>"+it.story+"</b>（到「金句故事」查完整版）"));
   c.appendChild(el("div","src","出處："+srcLinks(it.src)));
   c.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a+"\n\n出處："+srcLinks(it.src)));
   return c;
 }
 function storyCard(it,i){
   const c=el("div","card");
-  c.appendChild(el("h3",null,"✨ "+it.t));
+  c.appendChild(el("h3",null,icon("sparkle")+" "+it.t));
   c.appendChild(el("div","quote serif",it.s));
   c.appendChild(el("p",null,"<b>什麼時候用：</b>"+it.u));
   c.appendChild(el("div","src","出處："+it.src));
@@ -122,7 +167,7 @@ function storyCard(it,i){
 }
 function trCard(it){
   const c=el("div","card");
-  c.appendChild(el("h3",null,"📚 "+it.zh+' <span style="color:var(--muted);font-weight:400;font-size:13px">'+it.id+"</span>"));
+  c.appendChild(el("h3",null,icon("book")+" "+it.zh+' <span style="color:var(--muted);font-weight:400;font-size:13px">'+it.id+"</span>"));
   c.appendChild(el("div","tagrow",'<span class="chip static">'+it.cat+"</span>"));
   c.appendChild(el("p",null,"<b>"+it.one+"</b>"));
   c.appendChild(el("ul",null,it.pts.map(p=>"<li>"+p+"</li>").join("")));
@@ -162,7 +207,7 @@ function renderObjections(filter){
     const b=el("div","qa-body");
     b.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
     b.appendChild(el("p",null,it.a));
-    if(it.story)b.appendChild(el("div","quote","🎁 可搭配的故事：<b>"+it.story+"</b>"));
+    if(it.story)b.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事：<b>"+it.story+"</b>"));
     b.appendChild(el("div","src","出處："+srcLinks(it.src)));
     b.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a));
     d.appendChild(b); list.appendChild(d);
@@ -176,7 +221,7 @@ function renderObjections(filter){
     const b=el("div","qa-body");
     b.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
     b.appendChild(el("p",null,it.a));
-    if(it.story)b.appendChild(el("div","quote","🎁 可搭配的故事：<b>"+it.story+"</b>"));
+    if(it.story)b.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事：<b>"+it.story+"</b>"));
     b.appendChild(el("div","src","出處："+srcLinks(it.src)));
     b.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a));
     d.appendChild(b); list.appendChild(d);
@@ -227,7 +272,7 @@ function chatReply(q){
   if(best&&best.score>=1){
     const it=best.item;
     html+="<p style='margin:0 0 8px'><b>"+it.q+"</b></p><p style='margin:0'>"+it.a+"</p>";
-    if(it.story)html+='<div class="quote" style="margin:10px 0 0">🎁 可搭配的故事：<b>'+it.story+"</b></div>";
+    if(it.story)html+='<div class="quote" style="margin:10px 0 0">'+icon("bulb")+' 可搭配的故事：<b>'+it.story+"</b></div>";
     html+='<div class="src">出處：'+srcLinks(it.src)+"</div>";
     const more=rs.filter(r=>r!==best).slice(0,3);
     if(more.length){
@@ -265,7 +310,7 @@ HOTQ.forEach(h=>{
 (function(){
   const pick=$("#scen-pick");
   SCENARIOS.forEach((s,i)=>{
-    const b=el("button",null,s.icon+" "+s.t);
+    const b=el("button",null,icon(s.icon)+" "+s.t);
     b.addEventListener("click",()=>{
       document.querySelectorAll("#scen-pick button").forEach(x=>x.classList.remove("on"));
       b.classList.add("on"); renderScen(i);
@@ -275,16 +320,16 @@ HOTQ.forEach(h=>{
   function renderScen(i){
     const s=SCENARIOS[i]; const out=$("#scen-out"); out.innerHTML="";
     const c=el("div","card");
-    c.appendChild(el("h3",null,s.icon+" "+s.t+" — JR 式劇本"));
+    c.appendChild(el("h3",null,icon(s.icon)+" "+s.t+" — JR 式劇本"));
     const sec=(label,html)=>{const d=el("div","script-sec");d.appendChild(el("span","answer-label",label));d.appendChild(el("div",null,html));c.appendChild(d);};
     sec("開場白","<div class='quote serif'>"+s.open+"</div>");
     sec("關鍵句與心法","<ul>"+s.key.map(k=>"<li>"+k+"</li>").join("")+"</ul>");
     sec("可用故事",s.story);
     sec("收尾","<div class='quote serif'>"+s.close+"</div>");
-    sec("⚠️ 地雷（別做）","<div class='warnbox'>"+s.avoid+"</div>");
+    sec('地雷（別做）',"<div class='warnbox'>"+icon("warn")+" "+s.avoid+"</div>");
     c.appendChild(el("div","src","出處："+s.src));
-    const txt=s.icon+" "+s.t+"\n\n【開場】"+s.open+"\n\n【關鍵】\n"+s.key.map(k=>"• "+k).join("\n")+"\n\n【收尾】"+s.close+"\n\n【避免】"+s.avoid;
-    const row=el("div","actions"); const sb=el("button","abtn","📤 分享劇本");
+    const txt=s.t+"\n\n【開場】"+s.open+"\n\n【關鍵】\n"+s.key.map(k=>"• "+k).join("\n")+"\n\n【收尾】"+s.close+"\n\n【避免】"+s.avoid;
+    const row=el("div","actions"); const sb=el("button","abtn",icon("share")+"分享劇本");
     sb.addEventListener("click",()=>shareText(txt)); row.appendChild(sb); c.appendChild(row);
     out.appendChild(c); out.scrollIntoView({behavior:"smooth",block:"start"});
   }
@@ -320,7 +365,7 @@ function renderStories(filter){
     const c=el("div","card");
     c.appendChild(el("h3",null,s.t));
     c.appendChild(el("p",null,s.d));
-    c.appendChild(el("div","warnbox","⚠️ "+s.w));
+    c.appendChild(el("div","warnbox",icon("warn")+" "+s.w));
     c.appendChild(el("div","src","出處："+s.src));
     step.appendChild(c); list.appendChild(step);
   });
@@ -349,7 +394,7 @@ function renderTracker(){
     const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!today[c.k];
     cb.addEventListener("change",()=>{
       const st=trkState(); const dd=st.days[d]||{}; dd[c.k]=cb.checked; st.days[d]=dd; store.set("jr90",st); renderTracker();
-      if(cb.checked&&CHECKS.every(x=>dd[x.k]))toast("今日全數完成！90 天就是這樣堆出來的 💪");
+      if(cb.checked&&CHECKS.every(x=>dd[x.k]))toast("今日全數完成！90 天就是這樣堆出來的");
     });
     const t=el("div","ck-t","<b>"+c.t+"</b><span>"+c.d+"</span>");
     lab.append(cb,t); box.appendChild(lab);
@@ -398,7 +443,7 @@ renderQuiz();
 /* ---------- 收藏頁 ---------- */
 function renderFav(){
   const f=store.get("jrfav",[]); const list=$("#fav-list");list.innerHTML="";
-  if(!f.length){list.appendChild(el("div","empty","還沒有收藏。到任何卡片點「☆ 收藏」就會出現在這裡。"));return;}
+  if(!f.length){list.appendChild(el("div","empty","還沒有收藏。到任何卡片點「收藏」就會出現在這裡。"));return;}
   f.forEach(k=>{
     const [type,id]=k.split(":");
     if(type==="qa"&&QA[+id])list.appendChild(qaCard(QA[+id],+id));
