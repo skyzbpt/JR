@@ -7,6 +7,8 @@ A collection of speech and presentation transcripts by JR Ridinger, founder, cha
 | Transcript | Description |
 | --- | --- |
 | [90-Day Fast Track](transcripts/90-day-fast-track.md) | The 90-day fast track system: filling the funnel, trial runs, the 10-3-2 program, and building duplication from the bottom up. |
+| [Basic 5 (Original)](transcripts/basic-5-original.md) | The original Basic 5 training: the five fundamentals of the business. |
+| [Becoming a Master Recruiter](transcripts/becoming-a-master-recruiter.md) | Recruiting as a state of mind: cultivating possibilities, talking in themes, and getting people to lead you to people. |
 | [Becoming a Professional (1993)](transcripts/becoming-a-professional-1993.md) | Early talk on treating the business as a profession and making money. |
 | [Belief (MPCP)](transcripts/belief-mpcp.md) | On belief, delivered at a Market America MPCP event. |
 | [Brain Surgery](transcripts/brain-surgery.md) | Programming the brain and identity: how thinking, environment, and self-image drive results. |
