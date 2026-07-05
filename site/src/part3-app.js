@@ -158,12 +158,18 @@ function qaCard(it,i){
   c.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a+"\n\n出處："+srcLinks(it.src)));
   return c;
 }
+function storySrcName(src){
+  return String(src).split("/").map(s=>{
+    const t=TRANSCRIPTS.find(x=>x.id===s.trim());
+    return t?("《"+t.zh+"》"):s.trim();
+  }).join("、");
+}
 function storyCard(it,i){
   const c=el("div","card");
   c.appendChild(el("h3",null,icon("sparkle")+" "+it.t));
   c.appendChild(el("div","quote serif",it.s));
   c.appendChild(el("p",null,"<b>什麼時候用：</b>"+it.u));
-  c.appendChild(el("div","src","出處："+it.src));
+  c.appendChild(el("div","src","出處："+storySrcName(it.src)));
   c.appendChild(actionRow("story",i,"【"+it.t+"】\n"+it.s+"\n\n什麼時候用："+it.u));
   return c;
 }
