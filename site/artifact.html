@@ -136,6 +136,12 @@ details.qa .qa-body{padding:0 4px 16px}
 .trk-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
 .trk-day{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
 .trk-day small{font-size:14px;color:var(--muted);font-weight:400}
+.trk-dates{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;padding:10px 0 14px;border-bottom:1px solid var(--line);margin-bottom:6px;font-size:14px;color:var(--muted)}
+.trk-dates b{color:var(--ink);font-variant-numeric:tabular-nums}
+.trk-dates input[type=date]{
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;
+  padding:3px 8px;font-family:inherit;font-size:14px;font-variant-numeric:tabular-nums;
+}
 .bar{flex:1;min-width:180px;height:10px;background:var(--chip);border-radius:999px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
 .ck{display:flex;align-items:flex-start;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -303,6 +309,11 @@ h3 .ic,.secttl .ic{color:var(--gold)}
         <div class="trk-day"><span id="trk-daynum">–</span><small> / 90 天</small></div>
         <div class="bar"><i id="trk-bar" style="width:0%"></i></div>
         <button class="abtn" id="trk-reset">重新開始 90 天</button>
+      </div>
+      <div class="trk-dates" id="trk-dates">
+        <span>開始日期：<input type="date" id="trk-start" aria-label="開始日期"></span>
+        <span>今天：<b id="trk-today">–</b></span>
+        <span>第 90 天：<b id="trk-end">–</b></span>
       </div>
       <div id="trk-checks"></div>
       <div class="secttl">90 天進度圖（顏色深度＝當日完成度）</div>
@@ -1783,9 +1794,19 @@ function dayNum(s){
   const n=Math.floor((Date.now()-start.getTime())/86400000)+1;
   return Math.min(Math.max(n,1),90);
 }
+function fmtDate(dt){
+  return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+String(dt.getDate()).padStart(2,"0");
+}
+function dateOfDay(s,n){
+  const start=new Date(s.start+"T00:00:00");
+  return new Date(start.getTime()+(n-1)*86400000);
+}
 function renderTracker(){
   const s=trkState(); const d=dayNum(s);
   $("#trk-daynum").textContent=d;
+  $("#trk-start").value=s.start;
+  $("#trk-today").textContent=fmtDate(new Date())+"（第 "+d+" 天）";
+  $("#trk-end").textContent=fmtDate(dateOfDay(s,90));
   const today=s.days[d]||{};
   const doneCount=CHECKS.filter(c=>today[c.k]).length;
   $("#trk-bar").style.width=Math.round(d/90*100)+"%";
@@ -1808,10 +1829,17 @@ function renderTracker(){
     else if(n>=3)cell.classList.add("p2");
     else if(n>=1)cell.classList.add("p1");
     if(i===d)cell.classList.add("today");
-    cell.title="第 "+i+" 天："+n+"/"+CHECKS.length;
+    cell.title=fmtDate(dateOfDay(s,i))+"（第 "+i+" 天）："+n+"/"+CHECKS.length;
     grid.appendChild(cell);
   }
 }
+$("#trk-start").addEventListener("change",e=>{
+  const v=e.target.value; if(!v)return;
+  const picked=new Date(v+"T00:00:00");
+  if(picked.getTime()>Date.now()){toast("開始日期不能是未來");renderTracker();return;}
+  const st=trkState(); st.start=v; store.set("jr90",st); renderTracker();
+  toast("開始日期已更新："+v.replace(/-/g,"/"));
+});
 $("#trk-reset").addEventListener("click",()=>{
   if(confirm("確定要歸零、從今天重新開始 90 天嗎？")){
     store.set("jr90",{start:new Date().toISOString().slice(0,10),days:{}});

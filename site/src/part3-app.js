@@ -430,9 +430,19 @@ function dayNum(s){
   const n=Math.floor((Date.now()-start.getTime())/86400000)+1;
   return Math.min(Math.max(n,1),90);
 }
+function fmtDate(dt){
+  return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+String(dt.getDate()).padStart(2,"0");
+}
+function dateOfDay(s,n){
+  const start=new Date(s.start+"T00:00:00");
+  return new Date(start.getTime()+(n-1)*86400000);
+}
 function renderTracker(){
   const s=trkState(); const d=dayNum(s);
   $("#trk-daynum").textContent=d;
+  $("#trk-start").value=s.start;
+  $("#trk-today").textContent=fmtDate(new Date())+"（第 "+d+" 天）";
+  $("#trk-end").textContent=fmtDate(dateOfDay(s,90));
   const today=s.days[d]||{};
   const doneCount=CHECKS.filter(c=>today[c.k]).length;
   $("#trk-bar").style.width=Math.round(d/90*100)+"%";
@@ -455,10 +465,17 @@ function renderTracker(){
     else if(n>=3)cell.classList.add("p2");
     else if(n>=1)cell.classList.add("p1");
     if(i===d)cell.classList.add("today");
-    cell.title="第 "+i+" 天："+n+"/"+CHECKS.length;
+    cell.title=fmtDate(dateOfDay(s,i))+"（第 "+i+" 天）："+n+"/"+CHECKS.length;
     grid.appendChild(cell);
   }
 }
+$("#trk-start").addEventListener("change",e=>{
+  const v=e.target.value; if(!v)return;
+  const picked=new Date(v+"T00:00:00");
+  if(picked.getTime()>Date.now()){toast("開始日期不能是未來");renderTracker();return;}
+  const st=trkState(); st.start=v; store.set("jr90",st); renderTracker();
+  toast("開始日期已更新："+v.replace(/-/g,"/"));
+});
 $("#trk-reset").addEventListener("click",()=>{
   if(confirm("確定要歸零、從今天重新開始 90 天嗎？")){
     store.set("jr90",{start:new Date().toISOString().slice(0,10),days:{}});
