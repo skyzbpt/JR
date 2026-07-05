@@ -134,7 +134,9 @@ function searchAll(q){
     if(s>0.55)out.push({type:"story",id:i,score:s,item:it});
   });
   TRANSCRIPTS.forEach(it=>{
-    const s=scoreText(qb,it.zh)*4+scoreText(qb,it.one)*2+scoreText(qb,it.pts.join(""))*1.2;
+    const full=(typeof FULLTR!=="undefined"&&FULLTR[it.id])||null;
+    const extra=full?(full.faqs.join("")+full.pts.join("")).replace(/<[^>]+>/g,""):it.pts.join("");
+    const s=scoreText(qb,it.zh)*4+scoreText(qb,it.one)*2+scoreText(qb,extra)*1.2;
     if(s>0.55)out.push({type:"tr",id:it.id,score:s,item:it});
   });
   out.sort((a,b)=>b.score-a.score);
@@ -165,15 +167,31 @@ function storyCard(it,i){
   c.appendChild(actionRow("story",i,"【"+it.t+"】\n"+it.s+"\n\n什麼時候用："+it.u));
   return c;
 }
+const REPO_TR_URL="https://github.com/skyzbpt/JR/blob/claude/new-session-4j1sij/transcripts/";
 function trCard(it){
+  const full=(typeof FULLTR!=="undefined"&&FULLTR[it.id])||null;
+  const pts=full?full.pts:it.pts;
   const c=el("div","card");
   c.appendChild(el("h3",null,icon("book")+" "+it.zh+' <span style="color:var(--muted);font-weight:400;font-size:13px">'+it.id+"</span>"));
   c.appendChild(el("div","tagrow",'<span class="chip static">'+it.cat+"</span>"));
   c.appendChild(el("p",null,"<b>"+it.one+"</b>"));
-  c.appendChild(el("ul",null,it.pts.map(p=>"<li>"+p+"</li>").join("")));
+  const d1=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px;padding:4px 0'>核心重點（"+pts.length+" 條）▾</summary>");
+  d1.appendChild(el("ul",null,pts.map(p=>"<li>"+p+"</li>").join("")));
+  d1.open=!full; c.appendChild(d1);
   if(it.quote)c.appendChild(el("div","quote serif","「"+it.quote+"」"));
-  c.appendChild(el("div","src","逐字稿：transcripts/"+it.id+".md"));
-  c.appendChild(actionRow("tr",it.id,"《"+it.zh+"》\n"+it.one+"\n\n"+it.pts.map(p=>"• "+p).join("\n")));
+  if(full&&full.stories.length){
+    const d2=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px;padding:4px 0'>經典金句／故事（"+full.stories.length+"）▾</summary>");
+    d2.appendChild(el("ul",null,full.stories.map(p=>"<li>"+p+"</li>").join("")));
+    c.appendChild(d2);
+  }
+  if(full&&full.faqs.length){
+    const d3=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px;padding:4px 0'>這篇可回答的問題（"+full.faqs.length+"）▾</summary>");
+    d3.appendChild(el("ul",null,full.faqs.map(p=>"<li>"+p+"</li>").join("")));
+    c.appendChild(d3);
+  }
+  c.appendChild(el("div","src",'逐字稿：<a href="'+REPO_TR_URL+it.id+'.md" target="_blank" rel="noopener" style="color:var(--accent)">閱讀完整逐字稿 →</a>'));
+  const plain=s=>s.replace(/<[^>]+>/g,"");
+  c.appendChild(actionRow("tr",it.id,"《"+it.zh+"》\n"+it.one+"\n\n"+pts.map(p=>"• "+plain(p)).join("\n")));
   return c;
 }
 
