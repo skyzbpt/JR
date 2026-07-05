@@ -167,7 +167,6 @@ function storyCard(it,i){
   c.appendChild(actionRow("story",i,"【"+it.t+"】\n"+it.s+"\n\n什麼時候用："+it.u));
   return c;
 }
-const REPO_TR_URL="https://github.com/skyzbpt/JR/blob/claude/new-session-4j1sij/transcripts/";
 function trCard(it){
   const full=(typeof FULLTR!=="undefined"&&FULLTR[it.id])||null;
   const pts=full?full.pts:it.pts;
@@ -189,7 +188,6 @@ function trCard(it){
     d3.appendChild(el("ul",null,full.faqs.map(p=>"<li>"+p+"</li>").join("")));
     c.appendChild(d3);
   }
-  c.appendChild(el("div","src",'逐字稿：<a href="'+REPO_TR_URL+it.id+'.md" target="_blank" rel="noopener" style="color:var(--accent)">閱讀完整逐字稿 →</a>'));
   const plain=s=>s.replace(/<[^>]+>/g,"");
   c.appendChild(actionRow("tr",it.id,"《"+it.zh+"》\n"+it.one+"\n\n"+pts.map(p=>"• "+plain(p)).join("\n")));
   return c;
