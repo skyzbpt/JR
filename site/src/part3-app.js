@@ -139,8 +139,22 @@ function searchAll(q){
     const s=scoreText(qb,it.zh)*4+scoreText(qb,it.one)*2+scoreText(qb,extra)*1.2;
     if(s>0.55)out.push({type:"tr",id:it.id,score:s,item:it});
   });
+  SCENARIOS.forEach((sc,i)=>{
+    const s=scoreText(qb,sc.t)*4+scoreText(qb,sc.open+sc.key.join("")+sc.avoid)*1.2;
+    if(s>0.55)out.push({type:"scen",id:i,score:s,item:sc});
+  });
   out.sort((a,b)=>b.score-a.score);
   return out.slice(0,12);
+}
+function scenResultCard(sc){
+  const c=el("div","card");
+  c.appendChild(el("h3",null,icon(ICONS[sc.icon]?sc.icon:"clapper")+" 情境劇本：「"+sc.t+"」"));
+  c.appendChild(el("div","quote serif",sc.open));
+  c.appendChild(el("p",null,"完整劇本（關鍵句、可用故事、收尾、地雷）在「劇本產生器」分頁。"));
+  const btn=el("button","abtn","前往劇本產生器");
+  btn.addEventListener("click",()=>{show("script");document.querySelectorAll("#scen-pick button")[SCENARIOS.indexOf(sc)].click();});
+  c.appendChild(btn);
+  return c;
 }
 function srcLinks(srcs){
   return (srcs||[]).map(s=>{
@@ -205,8 +219,9 @@ function doSearch(){
   if(!q){box.appendChild(el("div","empty","輸入你遇到的狀況，例如「新人說他很忙」"));return;}
   const rs=searchAll(q);
   if(!rs.length){box.appendChild(el("div","empty","找不到直接對應的內容——換個說法試試，或到「JR 智囊」用對話方式問。"));return;}
-  const qa=rs.filter(r=>r.type==="qa"),st=rs.filter(r=>r.type==="story"),tr=rs.filter(r=>r.type==="tr");
+  const qa=rs.filter(r=>r.type==="qa"),st=rs.filter(r=>r.type==="story"),tr=rs.filter(r=>r.type==="tr"),sc=rs.filter(r=>r.type==="scen");
   if(qa.length){box.appendChild(el("div","secttl","對應的問答（"+qa.length+"）"));qa.forEach(r=>box.appendChild(qaCard(r.item,r.id)));}
+  if(sc.length){box.appendChild(el("div","secttl","情境劇本（"+sc.length+"）"));sc.forEach(r=>box.appendChild(scenResultCard(r.item)));}
   if(st.length){box.appendChild(el("div","secttl","可用的故事（"+st.length+"）"));st.forEach(r=>box.appendChild(storyCard(r.item,r.id)));}
   if(tr.length){box.appendChild(el("div","secttl","相關演講（"+tr.length+"）"));tr.forEach(r=>box.appendChild(trCard(r.item)));}
 }
@@ -360,10 +375,21 @@ HOTQ.forEach(h=>{
 /* ---------- 金句故事頁 ---------- */
 function renderStories(filter){
   const list=$("#st-list");list.innerHTML="";
-  STORIES.forEach((it,i)=>{
-    if(filter&&filter!=="全部"&&it.cat!==filter)return;
-    list.appendChild(storyCard(it,i));
+  list.style.display="block";
+  TRANSCRIPTS.forEach(tr=>{
+    const items=[];
+    STORIES.forEach((it,i)=>{
+      if(String(it.src).trim()!==tr.id)return;
+      if(filter&&filter!=="全部"&&it.cat!==filter)return;
+      items.push([it,i]);
+    });
+    if(!items.length)return;
+    list.appendChild(el("div","secttl","《"+tr.zh+"》（"+items.length+"）"));
+    const grid=el("div","grid2");
+    items.forEach(([it,i])=>grid.appendChild(storyCard(it,i)));
+    list.appendChild(grid);
   });
+  if(!list.children.length)list.appendChild(el("div","empty","此分類目前沒有故事。"));
 }
 (function(){
   const cats=["全部",...new Set(STORIES.map(x=>x.cat))];
