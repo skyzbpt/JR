@@ -29,20 +29,21 @@ const ICONS = {
  rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.18 2.18 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2z"/><path d="M9 12H4s.5-3 2-4c1.6-1.1 5 0 5 0"/><path d="M12 15v5s3-.5 4-2c1.1-1.6 0-5 0-5"/>',
  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 21H3v-5"/>',
  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+ up:'<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
 const TABS = [
  {id:"search",  l:"搜尋",        ic:"search"},
- {id:"objections",l:"異議處理",  ic:"shield"},
- {id:"chat",    l:"JR 智囊",     ic:"chat"},
- {id:"script",  l:"劇本產生器",  ic:"clapper"},
- {id:"stories", l:"金句故事",    ic:"sparkle"},
- {id:"browse",  l:"27 篇演講",   ic:"book"},
- {id:"sop",     l:"帶人 SOP",    ic:"route"},
- {id:"tracker", l:"90 天打卡",   ic:"calcheck"},
- {id:"quiz",    l:"主題測驗",    ic:"clipboard"},
- {id:"fav",     l:"收藏",        ic:"star"},
+ {id:"objections",l:"異議處理",  ic:"shield",   d:"常見異議＋JR 的回應與背後邏輯", n:()=>QA.filter(x=>x.type==="obj").length+" 題"},
+ {id:"chat",    l:"JR 智囊",     ic:"chat",     d:"用對話方式提問，回答附出處"},
+ {id:"script",  l:"劇本產生器",  ic:"clapper",  d:"選情境，產出開場到收尾的劇本", n:()=>SCENARIOS.length+" 個情境"},
+ {id:"stories", l:"金句故事",    ic:"sparkle",  d:"招牌比喻與故事，附使用時機", n:()=>STORIES.length+" 則"},
+ {id:"browse",  l:"27 篇演講",   ic:"book",     d:"依主題瀏覽全部演講重點", n:()=>TRANSCRIPTS.length+" 篇"},
+ {id:"sop",     l:"帶人 SOP",    ic:"route",    d:"從填滿漏斗到 ABC 深度複製", n:()=>SOP.length+" 步"},
+ {id:"tracker", l:"90 天打卡",   ic:"calcheck", d:"每日基本功，堆出瘋狂的 90 天"},
+ {id:"quiz",    l:"主題測驗",    ic:"clipboard",d:"把每個主題講成一段話", n:()=>QUIZ.length+" 題"},
+ {id:"fav",     l:"收藏",        ic:"star",     d:"收藏的內容，一鍵分享給夥伴"},
 ];
 
 const $ = s=>document.querySelector(s);
@@ -63,17 +64,24 @@ TABS.forEach(t=>{
   const d=el("button","drawer-item",icon(t.ic)+t.l); d.id="ditem-"+t.id;
   d.addEventListener("click",()=>{show(t.id);closeMenu();});
   drawerItems.appendChild(d);
+  const h=$("#v-"+t.id+" h2.vh"); if(h)h.insertAdjacentHTML("afterbegin",'<span class="vbadge">'+icon(t.ic)+"</span>");
 });
 function show(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
   document.querySelectorAll(".tab,.drawer-item").forEach(b=>b.classList.remove("on"));
   $("#v-"+id).classList.add("on"); $("#tab-"+id).classList.add("on");
   const di=$("#ditem-"+id); if(di)di.classList.add("on");
+  document.body.dataset.view=id;
   if(id==="fav") renderFav();
   if(id==="tracker") renderTracker();
   try{history.replaceState(null,"","#"+id);}catch(e){}
   window.scrollTo({top:0});
 }
+/* 回到頂端 */
+const totop=$("#totop");
+totop.innerHTML=icon("up");
+totop.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+window.addEventListener("scroll",()=>totop.classList.toggle("show",window.scrollY>700),{passive:true});
 /* 選單開關 */
 const menubtn=$("#menubtn"), drawer=$("#drawer"), backdrop=$("#backdrop");
 menubtn.innerHTML=icon("menu")+"選單";
@@ -172,10 +180,12 @@ function qaCard(it,i){
   c.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a+"\n\n出處："+srcLinks(it.src)));
   return c;
 }
+const SRC_ALIAS={"closing-merc-2019":"closing-presentation-merc-2019"};
 function storySrcName(src){
   return String(src).split("/").map(s=>{
-    const t=TRANSCRIPTS.find(x=>x.id===s.trim());
-    return t?("《"+t.zh+"》"):s.trim();
+    const id=SRC_ALIAS[s.trim()]||s.trim();
+    const t=TRANSCRIPTS.find(x=>x.id===id)||TRANSCRIPTS.find(x=>x.id.startsWith(id+"-"));
+    return t?("《"+t.zh+"》"):id;
   }).join("、");
 }
 function storyCard(it,i){
@@ -194,17 +204,17 @@ function trCard(it){
   c.appendChild(el("h3",null,icon("book")+" "+it.zh+' <span style="color:var(--muted);font-weight:400;font-size:13px">'+it.id+"</span>"));
   c.appendChild(el("div","tagrow",'<span class="chip static">'+it.cat+"</span>"));
   c.appendChild(el("p",null,"<b>"+it.one+"</b>"));
-  const d1=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px;padding:4px 0'>核心重點（"+pts.length+" 條）▾</summary>");
+  const d1=el("details",null,"<summary class='more'>核心重點（"+pts.length+" 條）</summary>");
   d1.appendChild(el("ul",null,pts.map(p=>"<li>"+p+"</li>").join("")));
   d1.open=!full; c.appendChild(d1);
   if(it.quote)c.appendChild(el("div","quote serif","「"+it.quote+"」"));
   if(full&&full.stories.length){
-    const d2=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px;padding:4px 0'>經典金句／故事（"+full.stories.length+"）▾</summary>");
+    const d2=el("details",null,"<summary class='more'>經典金句／故事（"+full.stories.length+"）</summary>");
     d2.appendChild(el("ul",null,full.stories.map(p=>"<li>"+p+"</li>").join("")));
     c.appendChild(d2);
   }
   if(full&&full.faqs.length){
-    const d3=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px;padding:4px 0'>這篇可回答的問題（"+full.faqs.length+"）▾</summary>");
+    const d3=el("details",null,"<summary class='more'>這篇可回答的問題（"+full.faqs.length+"）</summary>");
     d3.appendChild(el("ul",null,full.faqs.map(p=>"<li>"+p+"</li>").join("")));
     c.appendChild(d3);
   }
@@ -216,7 +226,8 @@ function trCard(it){
 /* ---------- 搜尋頁 ---------- */
 function doSearch(){
   const q=$("#q").value.trim(); const box=$("#results"); box.innerHTML="";
-  if(!q){box.appendChild(el("div","empty","輸入你遇到的狀況，例如「新人說他很忙」"));return;}
+  $("#shortcuts").hidden=!!q;
+  if(!q)return;
   const rs=searchAll(q);
   if(!rs.length){box.appendChild(el("div","empty","找不到直接對應的內容——換個說法試試，或到「JR 智囊」用對話方式問。"));return;}
   const qa=rs.filter(r=>r.type==="qa"),st=rs.filter(r=>r.type==="story"),tr=rs.filter(r=>r.type==="tr"),sc=rs.filter(r=>r.type==="scen");
@@ -232,6 +243,18 @@ HOTQ.forEach(h=>{
   b.addEventListener("click",()=>{$("#q").value=h;doSearch();});
   $("#hotq").appendChild(b);
 });
+/* 尚未搜尋時：功能捷徑 */
+(function(){
+  const box=$("#shortcuts");
+  box.appendChild(el("div","secttl","或直接前往"));
+  const grid=el("div","sc-grid");
+  TABS.filter(t=>t.d).forEach(t=>{
+    const b=el("button","sc-card",'<span class="sc-ic">'+icon(t.ic)+'</span><span class="sc-txt"><b>'+t.l+(t.n?"<em>"+t.n()+"</em>":"")+"</b><small>"+t.d+"</small></span>");
+    b.addEventListener("click",()=>show(t.id));
+    grid.appendChild(b);
+  });
+  box.appendChild(grid);
+})();
 
 /* ---------- 異議處理頁 ---------- */
 function renderObjections(filter){
@@ -302,6 +325,7 @@ function renderTr(filter){
 })();
 
 /* ---------- JR 智囊（檢索式對話） ---------- */
+const CHAT_WHO='<div class="who"><span class="who-av">'+icon("chat")+"</span>JR 智囊</div>";
 function chatReply(q){
   const rs=searchAll(q);
   const best=rs.find(r=>r.type==="qa");
@@ -319,7 +343,7 @@ function chatReply(q){
   }else{
     const st=rs.find(r=>r.type==="story"),tr=rs.find(r=>r.type==="tr");
     if(st){
-      html+="<p style='margin:0 0 8px'>這個情況可以用 JR 的故事——<b>"+st.item.t+"</b>：</p><p style='margin:0'>"+st.item.s+"</p><p style='margin:8px 0 0'><b>什麼時候用：</b>"+st.item.u+"</p><div class='src'>出處："+st.item.src+"</div>";
+      html+="<p style='margin:0 0 8px'>這個情況可以用 JR 的故事——<b>"+st.item.t+"</b>：</p><p style='margin:0'>"+st.item.s+"</p><p style='margin:8px 0 0'><b>什麼時候用：</b>"+st.item.u+"</p><div class='src'>出處："+storySrcName(st.item.src)+"</div>";
     }else if(tr){
       html+="<p style='margin:0 0 8px'>這題在《"+tr.item.zh+"》裡有完整教學：</p><p style='margin:0'><b>"+tr.item.one+"</b></p><ul>"+tr.item.pts.map(p=>"<li>"+p+"</li>").join("")+"</ul>";
     }else{
@@ -333,7 +357,7 @@ $("#chatform").addEventListener("submit",e=>{
   const q=$("#chatin").value.trim(); if(!q)return;
   $("#chatin").value="";
   $("#chatlog").appendChild(el("div","msg user",q));
-  const m=el("div","msg jr",'<div class="who">JR 智囊</div>'+chatReply(q));
+  const m=el("div","msg jr",CHAT_WHO+chatReply(q));
   $("#chatlog").appendChild(m);
   m.scrollIntoView({behavior:"smooth",block:"end"});
 });
@@ -342,6 +366,7 @@ HOTQ.forEach(h=>{
   b.addEventListener("click",()=>{$("#chatin").value=h;$("#chatform").dispatchEvent(new Event("submit"));});
   $("#quickq").appendChild(b);
 });
+$("#chatlog").appendChild(el("div","msg jr",CHAT_WHO+"<p style='margin:0'>把你遇到的狀況直接打出來，例如「新人說他沒時間」——我會從 JR 的 27 篇演講裡找出對應做法與出處。也可以點上面的快速問題。</p>"));
 
 /* ---------- 劇本產生器 ---------- */
 (function(){
@@ -364,7 +389,7 @@ HOTQ.forEach(h=>{
     sec("可用故事",s.story);
     sec("收尾","<div class='quote serif'>"+s.close+"</div>");
     sec('地雷（別做）',"<div class='warnbox'>"+icon("warn")+" "+s.avoid+"</div>");
-    c.appendChild(el("div","src","出處："+s.src));
+    c.appendChild(el("div","src","出處："+storySrcName(s.src)));
     const txt=s.t+"\n\n【開場】"+s.open+"\n\n【關鍵】\n"+s.key.map(k=>"• "+k).join("\n")+"\n\n【收尾】"+s.close+"\n\n【避免】"+s.avoid;
     const row=el("div","actions"); const sb=el("button","abtn",icon("share")+"分享劇本");
     sb.addEventListener("click",()=>shareText(txt)); row.appendChild(sb); c.appendChild(row);
@@ -414,7 +439,7 @@ function renderStories(filter){
     c.appendChild(el("h3",null,s.t));
     c.appendChild(el("p",null,s.d));
     c.appendChild(el("div","warnbox",icon("warn")+" "+s.w));
-    c.appendChild(el("div","src","出處："+s.src));
+    c.appendChild(el("div","src","出處："+storySrcName(s.src)));
     step.appendChild(c); list.appendChild(step);
   });
 })();
@@ -441,11 +466,13 @@ function renderTracker(){
   const s=trkState(); const d=dayNum(s);
   $("#trk-daynum").textContent=d;
   $("#trk-start").value=s.start;
-  $("#trk-today").textContent=fmtDate(new Date())+"（第 "+d+" 天）";
+  $("#trk-today").textContent=fmtDate(new Date());
   $("#trk-end").textContent=fmtDate(dateOfDay(s,90));
   const today=s.days[d]||{};
   const doneCount=CHECKS.filter(c=>today[c.k]).length;
   $("#trk-bar").style.width=Math.round(d/90*100)+"%";
+  $("#trk-pct").textContent=Math.round(d/90*100)+"%";
+  $("#trk-done").textContent=doneCount+" / "+CHECKS.length;
   const box=$("#trk-checks");box.innerHTML="";
   CHECKS.forEach(c=>{
     const lab=el("label","ck"+(today[c.k]?" done":""));
@@ -488,9 +515,9 @@ function renderQuiz(){
   const rate=store.get("jrquiz",{});
   const list=$("#qz-list");list.innerHTML="";
   QUIZ.forEach((qz,i)=>{
-    const c=el("div","card");
-    c.appendChild(el("h3",null,"題 "+(i+1)+"：請用一段話，向一個完全不懂的人解釋——<b>"+qz.t+"</b>"));
-    const d=el("details",null,"<summary style='cursor:pointer;color:var(--accent);font-size:14.5px'>先自己說一遍，再展開對照 JR 的版本 ▾</summary>");
+    const c=el("div","card"+(rate[i]!=null?" rated-"+rate[i]:""));
+    c.appendChild(el("h3",null,'<span class="qz-no">'+(i+1)+"</span>請用一段話，向一個完全不懂的人解釋——<b>"+qz.t+"</b>"));
+    const d=el("details",null,"<summary class='more'>先自己說一遍，再展開對照 JR 的版本</summary>");
     const inner=el("div","quote serif",qz.m); d.appendChild(inner); c.appendChild(d);
     const rateRow=el("div","qz-rate");
     ["還不熟","答得出一半","能教別人了"].forEach((lbl,lv)=>{
@@ -501,7 +528,7 @@ function renderQuiz(){
     c.appendChild(rateRow); list.appendChild(c);
   });
   const done=Object.values(rate).filter(v=>v===2).length;
-  $("#qz-score").innerHTML="目前自評：<b>"+done+" / "+QUIZ.length+"</b> 個主題「能教別人了」。JR：「這個考試通過了會讓你賺錢。」";
+  $("#qz-score").innerHTML='<div class="qz-sum"><div class="qz-n">'+done+"<small> / "+QUIZ.length+' 個主題能教別人了</small></div><div class="bar"><i style="width:'+Math.round(done/QUIZ.length*100)+'%"></i></div><p>JR：「這個考試通過了會讓你賺錢。」</p></div>';
 }
 renderQuiz();
 
