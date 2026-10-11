@@ -4,7 +4,7 @@ A collection of speech and presentation transcripts by JR Ridinger, founder, cha
 
 **中文重點總覽**：[docs/transcript-summaries.md](docs/transcript-summaries.md) — 全部 27 篇的核心重點、經典金句/故事、可回答的典型問題（依主題分類），作為零售/招募/異議處理問答網站的知識庫基礎。
 
-**JR 智庫網站**：[site/index.html](site/index.html) — 單一檔案、免伺服器的問答知識庫網站（繁體中文、支援手機與深淺色主題）。功能：問題搜尋、異議處理速查、JR 智囊對話、情境劇本產生器、金句故事庫、27 篇演講瀏覽、帶人 SOP、90 天打卡追蹤、主題測驗、收藏與分享。原始碼在 `site/src/`（六個部分依序組合而成），修改後執行 `sh site/build.sh` 即可重建 `site/artifact.html`、`site/index.html` 與根目錄的 `index.html`。
+**JR 智庫網站**：[site/index.html](site/index.html) — 單一檔案、免伺服器的問答知識庫網站（繁體中文、手機底部導覽列、深淺色主題可手動切換、支援瀏覽器返回鍵）。功能：邊打邊搜的問題搜尋、異議處理速查、JR 智囊對話、情境劇本產生器、金句故事庫（可關鍵字篩選）、27 篇演講瀏覽（出處可直接點開）、帶人 SOP、90 天打卡追蹤（連續天數、可補登過去的打卡）、主題測驗、收藏（可復原）與分享。原始碼在 `site/src/`（六個部分依序組合而成），修改後執行 `sh site/build.sh` 即可重建 `site/artifact.html`、`site/index.html` 與根目錄的 `index.html`。
 
 ## Index
 
