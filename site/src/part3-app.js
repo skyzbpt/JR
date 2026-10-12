@@ -34,6 +34,10 @@ const ICONS = {
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
  download:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+ upload:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/>',
+ type:'<path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/>',
+ arrow:'<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+ printer:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
@@ -109,6 +113,7 @@ function show(id,opt){
   document.body.dataset.view=id;
   curView=id;
   if(id==="fav")renderFav();
+  if(id==="search")renderToday();
   if(id==="tracker"){if(prev!=="tracker")trkSel=null;renderTracker();}
   /* 每次切換都記入瀏覽紀錄，手機「返回鍵」可回到上一頁 */
   if(opt.push!==false&&prev!==null&&location.hash!=="#"+id){try{history.pushState(null,"","#"+id);}catch(e){}}
@@ -226,8 +231,10 @@ function toggleFav(type,id){
   if(!favs().includes(k)){setFav(k,true);toast("已收藏");}
   else{const at=setFav(k,false);toast("已取消收藏",{label:"復原",fn:()=>setFav(k,true,at)});}
 }
+/* 分享時附上網址，收到的夥伴可以直接打開（本機檔案開啟時沒有網址可附） */
+const SITE_URL=/^https?:$/.test(location.protocol)?location.origin+location.pathname.replace(/index\.html$/,""):"";
 async function shareText(text){
-  const full=text+"\n\n—— 出自 JR 智庫（JR Ridinger 演講知識庫）";
+  const full=text+"\n\n—— 出自 JR 智庫（JR Ridinger 演講知識庫）"+(SITE_URL?"\n"+SITE_URL:"");
   if(navigator.share){try{await navigator.share({text:full});return;}catch(e){if(e.name==="AbortError")return;}}
   try{await navigator.clipboard.writeText(full);toast("已複製，直接貼給夥伴");}
   catch(e){toast("複製失敗，請手動選取文字");}
@@ -404,6 +411,35 @@ function doSearch(){
   if(sc.length){box.appendChild(el("div","secttl","情境劇本（"+sc.length+"）"));sc.forEach(r=>box.appendChild(scenResultCard(r.item,r.id)));}
   if(st.length){box.appendChild(el("div","secttl","可用的故事（"+st.length+"）"));st.forEach(r=>box.appendChild(storyCard(r.item,r.id)));}
   if(tr.length){box.appendChild(el("div","secttl","相關演講（"+tr.length+"）"));tr.forEach(r=>box.appendChild(trCard(r.item)));}
+  highlight(box,hlTerms(q,rs));
+}
+/* 要標示的字：查詢裡的詞、命中的關鍵詞；整句查詢再拆出 3 字以上的片段（2 字片段如「的人」太容易誤標） */
+function hlTerms(q,rs){
+  const out=new Set(), ql=q.toLowerCase();
+  q.split(/[\s，。！？、,.!?;:「」『』（）()\/／-]+/).filter(x=>x.length>=2).forEach(seg=>{
+    out.add(seg);
+    if(seg.length>=4)for(let i=0;i<seg.length;i++)for(let j=i+3;j<=seg.length;j++)out.add(seg.slice(i,j));
+  });
+  rs.forEach(r=>{if(r.type==="qa")(r.item.kw||[]).forEach(k=>{const kl=k.toLowerCase();if(k.length>=2&&(ql.includes(kl)||kl.includes(ql)))out.add(k);});});
+  return [...out].sort((a,b)=>b.length-a.length);
+}
+function highlight(root,terms){
+  if(!terms.length)return;
+  const re=new RegExp(terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|"),"gi");
+  const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>
+    n.parentElement.closest("button,summary,.src,mark,svg,.rmeta,.secttl")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  const nodes=[]; while(tw.nextNode())nodes.push(tw.currentNode);
+  nodes.forEach(n=>{
+    const t=n.nodeValue; re.lastIndex=0; if(!re.test(t))return;
+    const frag=document.createDocumentFragment(); let last=0, m; re.lastIndex=0;
+    while((m=re.exec(t))){
+      if(m.index>last)frag.appendChild(document.createTextNode(t.slice(last,m.index)));
+      const mk=document.createElement("mark"); mk.textContent=m[0]; frag.appendChild(mk);
+      last=m.index+m[0].length;
+    }
+    if(last<t.length)frag.appendChild(document.createTextNode(t.slice(last)));
+    n.parentNode.replaceChild(frag,n);
+  });
 }
 /* 邊打邊搜；中文輸入法選字時不觸發 */
 let qTimer=null;
@@ -603,7 +639,9 @@ function selectScen(i){
   const c=scenCard(i);
   const again=el("button","abtn",icon("refresh")+"換一個情境"); again.type="button";
   again.addEventListener("click",()=>scenPick.scrollIntoView({behavior:"smooth",block:"start"}));
-  c.querySelector(".actions").appendChild(again);
+  const pr=el("button","abtn",icon("printer")+"列印"); pr.type="button";
+  pr.addEventListener("click",()=>window.print());
+  c.querySelector(".actions").append(again,pr);
   out.appendChild(c);
   out.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -689,6 +727,11 @@ function renderTracker(){
   $("#trk-done").innerHTML=doneOf(s,d)+"<small>/ "+CHECKS.length+"</small>";
   $("#trk-streak").innerHTML=streakOf(s,d)+"<small>天</small>";
   $("#trk-full").innerHTML=full+"<small>天</small>";
+  /* JR：每週展示計畫 1-2 次是最低標——以 90 天的第幾週計算 */
+  const wk=Math.floor((d-1)/7); let plans=0;
+  for(let i=wk*7+1;i<=Math.min(wk*7+7,90);i++)if((s.days[i]||{}).plan)plans++;
+  $("#trk-wklbl").textContent="第 "+(wk+1)+" 週展示";
+  $("#trk-week").innerHTML=plans+"<small>/ 2 次</small>";
   $("#trk-fin").hidden=raw<=90;
   const dt=dateOfDay(s,sel);
   $("#trk-ckhead").classList.toggle("past",past);
@@ -735,6 +778,8 @@ $("#trk-start").addEventListener("change",e=>{
 });
 $("#trk-back").addEventListener("click",()=>{trkSel=null;renderTracker();});
 $("#trk-reset").innerHTML=icon("refresh")+"重新開始 90 天";
+$("#trk-backup").innerHTML=icon("download")+"備份紀錄";
+$("#trk-backup").addEventListener("click",backupData);
 $("#trk-reset").addEventListener("click",resetTracker);
 $("#trk-again").addEventListener("click",resetTracker);
 
@@ -749,11 +794,34 @@ function renderQuizSum(){
     '<div class="qz-leg"><span><i class="g"></i>能教別人 '+c[2]+'</span><span><i class="a"></i>答得出一半 '+c[1]+'</span><span><i class="w"></i>還不熟 '+c[0]+'</span><span><i></i>還沒自評 '+(N-c[0]-c[1]-c[2])+"</span></div>"+
     "<p>JR：「這個考試通過了會讓你賺錢。」</p></div>";
 }
+const QZ_FILTERS=[["all","全部"],["0","還不熟"],["1","答得出一半"],["2","能教別人了"],["none","還沒自評"]];
+let qzFilter="all";
+function qzMatch(f,v){return f==="all"||(f==="none"?v==null:v===+f);}
+function updQuizFilter(applyHide){
+  const r=store.get("jrquiz",{});
+  $("#qz-filter").querySelectorAll(".chip").forEach(b=>{
+    b.querySelector(".n").textContent=QUIZ.filter((_,i)=>qzMatch(b.dataset.v,r[i])).length;
+  });
+  if(!applyHide)return;
+  let shown=0;
+  $("#qz-list").querySelectorAll(".card").forEach(c=>{const ok=qzMatch(qzFilter,r[c.dataset.i]);c.hidden=!ok;if(ok)shown++;});
+  $("#qz-empty").hidden=!!shown;
+}
+QZ_FILTERS.forEach(([v,l])=>{
+  const b=el("button","chip"+(v===qzFilter?" on":""),l+'<span class="n"></span>'); b.type="button"; b.dataset.v=v;
+  b.setAttribute("aria-pressed",v===qzFilter?"true":"false");
+  b.addEventListener("click",()=>{
+    qzFilter=v;
+    $("#qz-filter").querySelectorAll(".chip").forEach(x=>{const on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-pressed",on?"true":"false");});
+    updQuizFilter(true);
+  });
+  $("#qz-filter").appendChild(b);
+});
 function renderQuiz(){
   const rate=store.get("jrquiz",{});
   const list=$("#qz-list");list.innerHTML="";
   QUIZ.forEach((qz,i)=>{
-    const c=el("div","card"+(rate[i]!=null?" rated-"+rate[i]:""));
+    const c=el("div","card"+(rate[i]!=null?" rated-"+rate[i]:"")); c.dataset.i=i;
     c.appendChild(el("h3",null,'<span class="qz-no">'+(i+1)+"</span>請用一段話，向一個完全不懂的人解釋——<b>"+qz.t+"</b>"));
     const d=el("details",null,"<summary class='more'>先自己說一遍，再展開對照 JR 的版本</summary>");
     d.appendChild(el("div","quote serif",qz.m)); c.appendChild(d);
@@ -765,13 +833,14 @@ function renderQuiz(){
         const r=store.get("jrquiz",{}); r[i]=lv; store.set("jrquiz",r);
         c.className="card rated-"+lv;
         rateRow.querySelectorAll("button").forEach((x,ix)=>{x.className=ix===lv?"sel-"+ix:"";x.setAttribute("aria-pressed",ix===lv?"true":"false");});
-        renderQuizSum();
+        /* 剛自評完的卡片先留在畫面上，換篩選時才重新套用，免得卡片突然消失 */
+        renderQuizSum(); updQuizFilter(false);
       });
       rateRow.appendChild(b);
     });
     c.appendChild(rateRow); list.appendChild(c);
   });
-  renderQuizSum();
+  renderQuizSum(); updQuizFilter(true);
 }
 renderQuiz();
 
@@ -803,9 +872,110 @@ function renderFav(){
 }
 updFavCount();
 
+/* ---------- 列印 ---------- */
+$("#sop-print").innerHTML=icon("printer")+"列印";
+$("#sop-print").addEventListener("click",()=>window.print());
+let printOpened=[];
+addEventListener("beforeprint",()=>{
+  printOpened=[...document.querySelectorAll(".view.on details:not([open])")];
+  printOpened.forEach(d=>d.open=true);
+});
+addEventListener("afterprint",()=>{printOpened.forEach(d=>d.open=false);printOpened=[];});
+
+/* ---------- 首頁「今天」：每日金句 + 打卡進度 ---------- */
+let todayOff=0;
+function renderToday(){
+  let box=$("#today");
+  if(!box){box=el("div","today");box.id="today";$("#shortcuts").prepend(box);}
+  box.innerHTML="";
+  /* 每天換一則；步長與故事總數互質，169 天內不重複 */
+  const dayNo=Math.floor(todayMid().getTime()/86400000);
+  const i=((dayNo*37+todayOff)%STORIES.length+STORIES.length)%STORIES.length, it=STORIES[i];
+  const q=el("div","card today-q");
+  q.appendChild(el("span","answer-label",todayOff?"再來一則":"今日金句"));
+  q.appendChild(el("h3",null,icon("sparkle")+" "+it.t));
+  q.appendChild(el("div","quote serif",it.s));
+  q.appendChild(el("p",null,"<b>什麼時候用：</b>"+it.u));
+  q.appendChild(el("div","src","出處："+storySrcName(it.src)));
+  const row=actionRow("story",i,"【"+it.t+"】\n"+it.s+"\n\n什麼時候用："+it.u);
+  const nx=el("button","abtn",icon("refresh")+"換一則"); nx.type="button";
+  nx.addEventListener("click",()=>{todayOff++;renderToday();});
+  row.appendChild(nx); q.appendChild(row);
+  box.appendChild(q);
+  /* 打卡進度：沒開始過就不要偷偷幫他開始 */
+  const st=store.get("jr90",null);
+  const t=el("button","today-trk"); t.type="button";
+  if(st&&st.start){
+    const s=trkState(), d=dayNum(s);
+    t.innerHTML='<span class="answer-label">今日打卡</span><b>'+doneOf(s,d)+"<small>/ "+CHECKS.length+" 項</small></b>"+
+      '<div class="bar"><i style="width:'+Math.round(doneOf(s,d)/CHECKS.length*100)+'%"></i></div>'+
+      '<span class="tt">90 天的第 '+d+" 天 · 連續 "+streakOf(s,d)+" 天</span>"+
+      '<span class="go">'+(doneOf(s,d)>=CHECKS.length?"今天全數完成":"去打卡")+icon("arrow")+"</span>";
+  }else{
+    t.innerHTML='<span class="answer-label">90 天快速起步</span><b style="font-size:20px">還沒開始</b>'+
+      '<span class="tt">每天 6 項基本功，堆出瘋狂的 90 天</span><span class="go">開始打卡'+icon("arrow")+"</span>";
+  }
+  t.addEventListener("click",()=>show("tracker"));
+  box.appendChild(t);
+}
+
+/* ---------- 我的資料：備份 / 還原 ---------- */
+const DATA_KEYS=["jrfav","jr90","jrquiz","jrrecent","jrtheme","jrfont"];
+async function backupData(){
+  const data={}; DATA_KEYS.forEach(k=>{const v=store.get(k,null);if(v!=null)data[k]=v;});
+  const json=JSON.stringify({app:"jr-zhiku",v:1,at:new Date().toISOString(),data},null,1);
+  const name="jr-zhiku-backup-"+ymd(new Date())+".json"; /* 中文檔名在部分瀏覽器會變成 download */
+  closeMenu();
+  /* 手機優先用分享（可存到雲端硬碟、傳 LINE 給自己）；電腦直接下載 */
+  try{
+    const file=new File([json],name,{type:"application/json"});
+    if(!finePointer.matches&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:"JR 智庫備份"}); return;
+    }
+  }catch(e){if(e&&e.name==="AbortError")return;}
+  const a=el("a"); a.href=URL.createObjectURL(new Blob([json],{type:"application/json"})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("備份檔已下載，換手機時用「從備份還原」");
+}
+function restoreData(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let pkg=null; try{pkg=JSON.parse(rd.result);}catch(e){}
+    if(!pkg||pkg.app!=="jr-zhiku"||!pkg.data||typeof pkg.data!=="object"){toast("這不是 JR 智庫的備份檔");return;}
+    const when=pkg.at?fmtDate(new Date(pkg.at)):"";
+    if(!confirm("要用"+(when?" "+when+" 的":"")+"備份取代目前的收藏、打卡與測驗紀錄嗎？"))return;
+    DATA_KEYS.forEach(k=>{if(k in pkg.data)store.set(k,pkg.data[k]);});
+    try{sessionStorage.setItem("jrtoast","資料已還原");}catch(e){}
+    location.reload();
+  };
+  rd.readAsText(file);
+}
+$("#backupbtn").innerHTML=icon("download")+"<span>備份我的資料</span>";
+$("#backupbtn").addEventListener("click",backupData);
+$("#restorebtn").innerHTML=icon("upload")+"<span>從備份還原</span>";
+$("#restorebtn").addEventListener("click",()=>$("#restorefile").click());
+$("#restorefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(f){closeMenu();restoreData(f);}});
+try{const m=sessionStorage.getItem("jrtoast");if(m){sessionStorage.removeItem("jrtoast");setTimeout(()=>toast(m),300);}}catch(e){}
+
+/* ---------- 字級 ---------- */
+(function(){
+  $("#fs-lbl").innerHTML=icon("type")+"字級";
+  const seg=$("#fs-seg");
+  const apply=v=>{
+    if(v)document.documentElement.dataset.fs=v; else delete document.documentElement.dataset.fs;
+    seg.querySelectorAll("button").forEach((b,ix)=>{b.classList.toggle("on",ix===v);b.setAttribute("aria-pressed",ix===v?"true":"false");});
+  };
+  ["標準","大","特大"].forEach((l,ix)=>{
+    const b=el("button",null,l); b.type="button";
+    b.addEventListener("click",()=>{store.set("jrfont",ix||null);apply(ix);});
+    seg.appendChild(b);
+  });
+  const f=store.get("jrfont",0); apply(f===1||f===2?f:0);
+})();
+
 /* ---------- 加到主畫面 + 離線使用 ---------- */
 (function(){
-  const row=$("#installrow"), btn=$("#installbtn");
+  const btn=$("#installbtn"), row=btn;
   btn.innerHTML=icon("download")+"<span>加到手機主畫面</span>";
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
   const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
