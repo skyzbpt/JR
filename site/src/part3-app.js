@@ -30,53 +30,115 @@ const ICONS = {
  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 21H3v-5"/>',
  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
  up:'<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+ grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+ moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+ download:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
 const TABS = [
  {id:"search",  l:"搜尋",        ic:"search"},
- {id:"objections",l:"異議處理",  ic:"shield",   d:"常見異議＋JR 的回應與背後邏輯", n:()=>QA.filter(x=>x.type==="obj").length+" 題"},
+ {id:"objections",l:"異議處理",  s:"異議", ic:"shield",   d:"常見異議＋JR 的回應與背後邏輯", n:()=>QA.filter(x=>x.type==="obj").length+" 題"},
  {id:"chat",    l:"JR 智囊",     ic:"chat",     d:"用對話方式提問，回答附出處"},
- {id:"script",  l:"劇本產生器",  ic:"clapper",  d:"選情境，產出開場到收尾的劇本", n:()=>SCENARIOS.length+" 個情境"},
+ {id:"script",  l:"劇本產生器",  s:"劇本", ic:"clapper",  d:"選情境，產出開場到收尾的劇本", n:()=>SCENARIOS.length+" 個情境"},
  {id:"stories", l:"金句故事",    ic:"sparkle",  d:"招牌比喻與故事，附使用時機", n:()=>STORIES.length+" 則"},
  {id:"browse",  l:"27 篇演講",   ic:"book",     d:"依主題瀏覽全部演講重點", n:()=>TRANSCRIPTS.length+" 篇"},
  {id:"sop",     l:"帶人 SOP",    ic:"route",    d:"從填滿漏斗到 ABC 深度複製", n:()=>SOP.length+" 步"},
- {id:"tracker", l:"90 天打卡",   ic:"calcheck", d:"每日基本功，堆出瘋狂的 90 天"},
+ {id:"tracker", l:"90 天打卡",   s:"打卡", ic:"calcheck", d:"每日基本功，堆出瘋狂的 90 天"},
  {id:"quiz",    l:"主題測驗",    ic:"clipboard",d:"把每個主題講成一段話", n:()=>QUIZ.length+" 題"},
  {id:"fav",     l:"收藏",        ic:"star",     d:"收藏的內容，一鍵分享給夥伴"},
 ];
+/* 手機底部導覽：最常用的四個 + 「更多」 */
+const BNAV = ["search","objections","script","tracker"];
 
 const $ = s=>document.querySelector(s);
 const el = (tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const store = {
   get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 };
-function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._x);toast._x=setTimeout(()=>t.classList.remove("show"),1800);}
+const finePointer = matchMedia("(hover:hover) and (pointer:fine)");
+function toast(msg,act){
+  const t=$("#toast"); t.textContent=msg;
+  if(act){
+    const b=el("button","toast-act",act.label); b.type="button";
+    b.addEventListener("click",()=>{t.classList.remove("show","has-act");act.fn();});
+    t.appendChild(b);
+  }
+  t.classList.toggle("has-act",!!act); t.classList.add("show");
+  clearTimeout(toast._x); toast._x=setTimeout(()=>t.classList.remove("show","has-act"),act?4500:1800);
+}
+/* 問句本身有「」就不再包一層 */
+const fmtQ = q=>/^「/.test(q)?q:"「"+q+"」";
 
-/* ---------- 導覽（頁籤 + 抽屜選單） ---------- */
-const tabsEl = $("#tabs");
-const drawerItems = $("#drawer-items");
+/* ---------- 導覽（頁籤 + 抽屜選單 + 手機底部列） ---------- */
+const tabsEl = $("#tabs"), drawerItems = $("#drawer-items"), bnav = $("#bnav");
 TABS.forEach(t=>{
-  const b=el("button","tab",icon(t.ic)+t.l); b.id="tab-"+t.id;
+  const cnt=t.id==="fav"?'<span class="cnt" data-favcnt></span>':"";
+  const b=el("button","tab",icon(t.ic)+t.l+cnt); b.id="tab-"+t.id; b.type="button";
   b.addEventListener("click",()=>show(t.id));
   tabsEl.appendChild(b);
-  const d=el("button","drawer-item",icon(t.ic)+t.l); d.id="ditem-"+t.id;
+  const d=el("button","drawer-item",icon(t.ic)+"<span>"+t.l+"</span>"+cnt); d.id="ditem-"+t.id; d.type="button";
   d.addEventListener("click",()=>{show(t.id);closeMenu();});
   drawerItems.appendChild(d);
   const h=$("#v-"+t.id+" h2.vh"); if(h)h.insertAdjacentHTML("afterbegin",'<span class="vbadge">'+icon(t.ic)+"</span>");
 });
-function show(id){
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
-  document.querySelectorAll(".tab,.drawer-item").forEach(b=>b.classList.remove("on"));
-  $("#v-"+id).classList.add("on"); $("#tab-"+id).classList.add("on");
-  const di=$("#ditem-"+id); if(di)di.classList.add("on");
+BNAV.forEach(id=>{
+  const t=TABS.find(x=>x.id===id);
+  const b=el("button","bn-item",'<span class="bn-ic">'+icon(t.ic)+"</span>"+(t.s||t.l)); b.id="bn-"+id; b.type="button";
+  b.addEventListener("click",()=>show(id));
+  bnav.appendChild(b);
+});
+const bnMore=el("button","bn-item",'<span class="bn-ic">'+icon("grid")+"</span>更多");
+bnMore.type="button"; bnMore.setAttribute("aria-expanded","false"); bnMore.setAttribute("aria-controls","drawer");
+bnMore.addEventListener("click",()=>openMenu(bnMore));
+bnav.appendChild(bnMore);
+
+let curView=null;
+function show(id,opt){
+  opt=opt||{};
+  if(!TABS.some(t=>t.id===id))id="search";
+  const prev=curView;
+  document.querySelectorAll(".view.on").forEach(v=>v.classList.remove("on"));
+  document.querySelectorAll(".tab.on,.drawer-item.on,.bn-item.on").forEach(b=>{b.classList.remove("on");b.removeAttribute("aria-current");});
+  $("#v-"+id).classList.add("on");
+  ["#tab-","#ditem-","#bn-"].forEach(p=>{const b=$(p+id);if(b){b.classList.add("on");b.setAttribute("aria-current","page");}});
+  if(!BNAV.includes(id))bnMore.classList.add("on");
   document.body.dataset.view=id;
-  if(id==="fav") renderFav();
-  if(id==="tracker") renderTracker();
-  try{history.replaceState(null,"","#"+id);}catch(e){}
+  curView=id;
+  if(id==="fav")renderFav();
+  if(id==="tracker"){if(prev!=="tracker")trkSel=null;renderTracker();}
+  /* 每次切換都記入瀏覽紀錄，手機「返回鍵」可回到上一頁 */
+  if(opt.push!==false&&prev!==null&&location.hash!=="#"+id){try{history.pushState(null,"","#"+id);}catch(e){}}
+  revealTab(id);
   window.scrollTo({top:0});
+  if(prev!==null&&prev!==id&&finePointer.matches){
+    if(id==="search")$("#q").focus({preventScroll:true});
+    if(id==="chat")$("#chatin").focus({preventScroll:true});
+  }
 }
+window.addEventListener("popstate",()=>{
+  const h=(location.hash||"").slice(1);
+  if(TABS.some(t=>t.id===h))show(h,{push:false});
+  else if(!h)show("search",{push:false});
+});
+/* 頁籤列：目前分頁捲到可見處，兩側有更多時淡出提示 */
+function updTabFade(){
+  const max=tabsEl.scrollWidth-tabsEl.clientWidth;
+  tabsEl.classList.toggle("fade-l",tabsEl.scrollLeft>2);
+  tabsEl.classList.toggle("fade-r",max-tabsEl.scrollLeft>2);
+}
+function revealTab(id){
+  const b=$("#tab-"+id); if(!b||!tabsEl.clientWidth)return;
+  const l=b.offsetLeft, r=l+b.offsetWidth, pad=40;
+  if(l<tabsEl.scrollLeft+pad)tabsEl.scrollLeft=l-pad;
+  else if(r>tabsEl.scrollLeft+tabsEl.clientWidth-pad)tabsEl.scrollLeft=r-tabsEl.clientWidth+pad;
+  updTabFade();
+}
+tabsEl.addEventListener("scroll",updTabFade,{passive:true});
+window.addEventListener("resize",updTabFade);
 /* 回到頂端 */
 const totop=$("#totop");
 totop.innerHTML=icon("up");
@@ -84,23 +146,85 @@ totop.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
 window.addEventListener("scroll",()=>totop.classList.toggle("show",window.scrollY>700),{passive:true});
 /* 選單開關 */
 const menubtn=$("#menubtn"), drawer=$("#drawer"), backdrop=$("#backdrop");
+let menuOpener=null;
 menubtn.innerHTML=icon("menu")+"選單";
 $("#drawer-close").innerHTML=icon("close");
-function openMenu(){drawer.classList.add("open");backdrop.classList.add("open");drawer.setAttribute("aria-hidden","false");menubtn.setAttribute("aria-expanded","true");}
-function closeMenu(){drawer.classList.remove("open");backdrop.classList.remove("open");drawer.setAttribute("aria-hidden","true");menubtn.setAttribute("aria-expanded","false");}
-menubtn.addEventListener("click",()=>drawer.classList.contains("open")?closeMenu():openMenu());
+drawer.inert=true;
+function openMenu(from){
+  menuOpener=from||menubtn;
+  drawer.inert=false; drawer.classList.add("open"); backdrop.classList.add("open"); drawer.setAttribute("aria-hidden","false");
+  menubtn.setAttribute("aria-expanded","true"); bnMore.setAttribute("aria-expanded","true");
+  (drawer.querySelector(".drawer-item.on")||$("#drawer-close")).focus({preventScroll:true});
+}
+function closeMenu(){
+  if(!drawer.classList.contains("open"))return;
+  drawer.classList.remove("open"); backdrop.classList.remove("open"); drawer.setAttribute("aria-hidden","true"); drawer.inert=true;
+  menubtn.setAttribute("aria-expanded","false"); bnMore.setAttribute("aria-expanded","false");
+  if(menuOpener)menuOpener.focus({preventScroll:true}); menuOpener=null;
+}
+menubtn.addEventListener("click",()=>drawer.classList.contains("open")?closeMenu():openMenu(menubtn));
+$("#drawer-close").addEventListener("click",closeMenu);
 backdrop.addEventListener("click",closeMenu);
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
+/* 跳到主要內容（不改網址，避免被當成分頁切換） */
+$(".skip").addEventListener("click",e=>{e.preventDefault();$("#main").focus();});
+/* 鍵盤：Esc 關選單、/ 快速搜尋 */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape")closeMenu();
+  if(e.key==="/"&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.isComposing){
+    if(e.target.closest&&e.target.closest("input,textarea,select,[contenteditable]"))return;
+    e.preventDefault(); closeMenu();
+    if(curView!=="search")show("search");
+    $("#q").focus(); $("#q").select();
+  }
+});
+
+/* ---------- 深淺色主題切換 ---------- */
+const themebtn=$("#themebtn"), darkMQ=matchMedia("(prefers-color-scheme: dark)");
+const THEME_COLOR={light:"#cbe5f8",dark:"#0f2740"};
+const curTheme=()=>document.documentElement.dataset.theme||(darkMQ.matches?"dark":"light");
+function syncTheme(){
+  const t=curTheme(), forced=document.documentElement.dataset.theme;
+  const lbl=t==="dark"?"切換為淺色主題":"切換為深色主題";
+  themebtn.innerHTML=icon(t==="dark"?"sun":"moon");
+  themebtn.setAttribute("aria-label",lbl); themebtn.title=lbl;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+    if(!m.dataset.orig)m.dataset.orig=m.content;
+    m.content=forced?THEME_COLOR[forced]:m.dataset.orig;
+  });
+}
+themebtn.addEventListener("click",()=>{
+  const next=curTheme()==="dark"?"light":"dark";
+  /* 切回與系統相同時就恢復「跟隨系統」 */
+  if(next===(darkMQ.matches?"dark":"light")){delete document.documentElement.dataset.theme;store.set("jrtheme",null);}
+  else{document.documentElement.dataset.theme=next;store.set("jrtheme",next);}
+  syncTheme();
+});
+if(darkMQ.addEventListener)darkMQ.addEventListener("change",syncTheme);
+syncTheme();
 
 /* ---------- 收藏 / 分享 ---------- */
+const favs=()=>store.get("jrfav",[]);
 function favKey(type,id){return type+":"+id;}
-function isFaved(type,id){return store.get("jrfav",[]).includes(favKey(type,id));}
-function toggleFav(type,id,btn){
-  let f=store.get("jrfav",[]); const k=favKey(type,id);
-  if(f.includes(k)){f=f.filter(x=>x!==k);toast("已取消收藏");}
-  else{f.push(k);toast("已收藏");}
-  store.set("jrfav",f);
-  if(btn){btn.classList.toggle("faved");btn.innerHTML=btn.classList.contains("faved")?icon("star","fill")+"已收藏":icon("star")+"收藏";}
+function isFaved(type,id){return favs().includes(favKey(type,id));}
+function updFavCount(){const n=favs().length;document.querySelectorAll("[data-favcnt]").forEach(e=>e.textContent=n?String(n):"");}
+function setFavBtn(btn,on){
+  btn.classList.toggle("faved",on); btn.setAttribute("aria-pressed",on?"true":"false");
+  btn.innerHTML=icon("star",on?"fill":"")+(on?"已收藏":"收藏");
+}
+function setFav(k,on,at){
+  let f=favs(); const had=f.indexOf(k);
+  if(on&&had<0){if(at!=null&&at>=0&&at<=f.length)f.splice(at,0,k);else f.push(k);}
+  if(!on&&had>=0)f.splice(had,1);
+  store.set("jrfav",f); updFavCount();
+  /* 同一則內容可能同時出現在多處（搜尋結果、清單），一起更新 */
+  document.querySelectorAll(".abtn[data-fav]").forEach(b=>{if(b.dataset.fav===k)setFavBtn(b,on);});
+  if(curView==="fav")renderFav();
+  return had;
+}
+function toggleFav(type,id){
+  const k=favKey(type,id);
+  if(!favs().includes(k)){setFav(k,true);toast("已收藏");}
+  else{const at=setFav(k,false);toast("已取消收藏",{label:"復原",fn:()=>setFav(k,true,at)});}
 }
 async function shareText(text){
   const full=text+"\n\n—— 出自 JR 智庫（JR Ridinger 演講知識庫）";
@@ -110,12 +234,34 @@ async function shareText(text){
 }
 function actionRow(type,id,shareStr){
   const row=el("div","actions");
-  const fb=el("button","abtn"+(isFaved(type,id)?" faved":""),icon("star",isFaved(type,id)?"fill":"")+(isFaved(type,id)?"已收藏":"收藏"));
-  fb.addEventListener("click",()=>toggleFav(type,id,fb));
-  const sb=el("button","abtn",icon("share")+"分享");
+  const fb=el("button","abtn"); fb.type="button"; fb.dataset.fav=favKey(type,id);
+  setFavBtn(fb,isFaved(type,id));
+  fb.addEventListener("click",()=>toggleFav(type,id));
+  const sb=el("button","abtn",icon("share")+"分享"); sb.type="button";
   sb.addEventListener("click",()=>shareText(shareStr));
   row.append(fb,sb); return row;
 }
+
+/* ---------- 跨頁連結（出處 → 演講、故事 → 搜尋、延伸 → 智囊） ---------- */
+document.addEventListener("click",e=>{
+  const a=e.target.closest&&e.target.closest("[data-tr],[data-q],[data-ask],[data-scen],[data-go]");
+  if(!a)return;
+  if(a.dataset.tr)gotoTranscript(a.dataset.tr);
+  else if(a.dataset.q!=null)gotoSearch(a.dataset.q);
+  else if(a.dataset.ask!=null)askChat(a.dataset.ask);
+  else if(a.dataset.scen!=null){show("script");selectScen(+a.dataset.scen);}
+  else if(a.dataset.go)show(a.dataset.go);
+});
+function flash(node){node.classList.remove("flash");void node.offsetWidth;node.classList.add("flash");}
+function gotoSearch(q){show("search");$("#q").value=q;doSearch();}
+function gotoTranscript(id){
+  const t=TRANSCRIPTS.find(x=>x.id===id); if(!t)return;
+  show("browse");
+  if(trFilter.cur!=="全部"&&trFilter.cur!==t.cat)trFilter.set("全部");
+  const card=document.querySelector('#tr-list [data-trid="'+id+'"]');
+  if(card){card.scrollIntoView({block:"start"});flash(card);}
+}
+function storyLink(name){return '<button type="button" class="link" data-q="'+esc(name)+'">'+name+"</button>";}
 
 /* ---------- 搜尋核心（雙字元檢索 + 關鍵詞加權） ---------- */
 function bigrams(s){
@@ -154,20 +300,20 @@ function searchAll(q){
   out.sort((a,b)=>b.score-a.score);
   return out.slice(0,12);
 }
-function scenResultCard(sc){
+function scenResultCard(sc,i){
   const c=el("div","card");
   c.appendChild(el("h3",null,icon(ICONS[sc.icon]?sc.icon:"clapper")+" 情境劇本：「"+sc.t+"」"));
   c.appendChild(el("div","quote serif",sc.open));
-  c.appendChild(el("p",null,"完整劇本（關鍵句、可用故事、收尾、地雷）在「劇本產生器」分頁。"));
-  const btn=el("button","abtn","前往劇本產生器");
-  btn.addEventListener("click",()=>{show("script");document.querySelectorAll("#scen-pick button")[SCENARIOS.indexOf(sc)].click();});
-  c.appendChild(btn);
+  c.appendChild(el("p",null,"完整劇本（關鍵句、可用故事、收尾、地雷）在「劇本產生器」。"));
+  const row=el("div","actions",'<button type="button" class="abtn" data-scen="'+i+'">'+icon("clapper")+"看完整劇本</button>");
+  c.appendChild(row);
   return c;
 }
-function srcLinks(srcs){
+function srcLinks(srcs,plain){
   return (srcs||[]).map(s=>{
     const t=TRANSCRIPTS.find(x=>x.id===s);
-    return t?("《"+t.zh+"》"):s;
+    if(!t)return esc(s);
+    return plain?"《"+t.zh+"》":'<button type="button" class="link" data-tr="'+t.id+'">《'+t.zh+"》</button>";
   }).join("、");
 }
 function qaCard(it,i){
@@ -175,17 +321,18 @@ function qaCard(it,i){
   c.appendChild(el("h3",null,(it.type==="obj"?icon("shield"):icon("compass"))+" "+it.q));
   c.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
   c.appendChild(el("p",null,it.a));
-  if(it.story)c.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事：<b>"+it.story+"</b>（到「金句故事」查完整版）"));
+  if(it.story)c.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事："+storyLink(it.story)));
   c.appendChild(el("div","src","出處："+srcLinks(it.src)));
-  c.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a+"\n\n出處："+srcLinks(it.src)));
+  c.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a+"\n\n出處："+srcLinks(it.src,true)));
   return c;
 }
 const SRC_ALIAS={"closing-merc-2019":"closing-presentation-merc-2019"};
-function storySrcName(src){
+function storySrcName(src,plain){
   return String(src).split("/").map(s=>{
     const id=SRC_ALIAS[s.trim()]||s.trim();
     const t=TRANSCRIPTS.find(x=>x.id===id)||TRANSCRIPTS.find(x=>x.id.startsWith(id+"-"));
-    return t?("《"+t.zh+"》"):id;
+    if(!t)return esc(id);
+    return plain?"《"+t.zh+"》":'<button type="button" class="link" data-tr="'+t.id+'">《'+t.zh+"》</button>";
   }).join("、");
 }
 function storyCard(it,i){
@@ -200,7 +347,7 @@ function storyCard(it,i){
 function trCard(it){
   const full=(typeof FULLTR!=="undefined"&&FULLTR[it.id])||null;
   const pts=full?full.pts:it.pts;
-  const c=el("div","card");
+  const c=el("div","card"); c.dataset.trid=it.id;
   c.appendChild(el("h3",null,icon("book")+" "+it.zh+' <span style="color:var(--muted);font-weight:400;font-size:13px">'+it.id+"</span>"));
   c.appendChild(el("div","tagrow",'<span class="chip static">'+it.cat+"</span>"));
   c.appendChild(el("p",null,"<b>"+it.one+"</b>"));
@@ -223,24 +370,82 @@ function trCard(it){
   return c;
 }
 
+/* ---------- 篩選標籤（附數量） ---------- */
+function chipFilter(box,cats,count,onPick){
+  const api={cur:cats[0],set(c){
+    api.cur=c;
+    box.querySelectorAll(".chip").forEach(x=>{const on=x.dataset.v===c;x.classList.toggle("on",on);x.setAttribute("aria-pressed",on?"true":"false");});
+    onPick(c);
+  }};
+  cats.forEach(c=>{
+    const b=el("button","chip",esc(c)+'<span class="n">'+count(c)+"</span>"); b.type="button"; b.dataset.v=c;
+    b.addEventListener("click",()=>api.set(c));
+    box.appendChild(b);
+  });
+  api.set(cats[0]);
+  return api;
+}
+
 /* ---------- 搜尋頁 ---------- */
+const qIn=$("#q");
 function doSearch(){
-  const q=$("#q").value.trim(); const box=$("#results"); box.innerHTML="";
+  const q=qIn.value.trim(); const box=$("#results"); box.innerHTML="";
   $("#shortcuts").hidden=!!q;
   if(!q)return;
   const rs=searchAll(q);
-  if(!rs.length){box.appendChild(el("div","empty","找不到直接對應的內容——換個說法試試，或到「JR 智囊」用對話方式問。"));return;}
+  if(!rs.length){
+    const e=el("div","empty","找不到「"+esc(q)+"」的直接對應內容。<br>換個說法試試（用對方的原話通常最準），或交給 JR 智囊用對話方式問。");
+    e.appendChild(el("div","actions",'<button type="button" class="abtn" data-ask="'+esc(q)+'">'+icon("chat")+"問 JR 智囊</button>"));
+    box.appendChild(e); return;
+  }
+  box.appendChild(el("div","rmeta","找到 <b>"+rs.length+"</b> 筆相關內容"));
   const qa=rs.filter(r=>r.type==="qa"),st=rs.filter(r=>r.type==="story"),tr=rs.filter(r=>r.type==="tr"),sc=rs.filter(r=>r.type==="scen");
   if(qa.length){box.appendChild(el("div","secttl","對應的問答（"+qa.length+"）"));qa.forEach(r=>box.appendChild(qaCard(r.item,r.id)));}
-  if(sc.length){box.appendChild(el("div","secttl","情境劇本（"+sc.length+"）"));sc.forEach(r=>box.appendChild(scenResultCard(r.item)));}
+  if(sc.length){box.appendChild(el("div","secttl","情境劇本（"+sc.length+"）"));sc.forEach(r=>box.appendChild(scenResultCard(r.item,r.id)));}
   if(st.length){box.appendChild(el("div","secttl","可用的故事（"+st.length+"）"));st.forEach(r=>box.appendChild(storyCard(r.item,r.id)));}
   if(tr.length){box.appendChild(el("div","secttl","相關演講（"+tr.length+"）"));tr.forEach(r=>box.appendChild(trCard(r.item)));}
 }
-$("#qbtn").addEventListener("click",doSearch);
-$("#q").addEventListener("keydown",e=>{if(e.key==="Enter")doSearch();});
+/* 邊打邊搜；中文輸入法選字時不觸發 */
+let qTimer=null;
+const schedSearch=()=>{clearTimeout(qTimer);qTimer=setTimeout(doSearch,250);};
+qIn.addEventListener("input",e=>{if(!e.isComposing)schedSearch();});
+qIn.addEventListener("compositionend",schedSearch);
+qIn.addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||e.isComposing)return;
+  clearTimeout(qTimer); doSearch(); addRecent(qIn.value);
+  if(!finePointer.matches)qIn.blur();
+});
+$("#qbtn").addEventListener("click",()=>{clearTimeout(qTimer);doSearch();addRecent(qIn.value);});
+/* 邊打邊搜的半截字不記；離開搜尋框時才把有結果的查詢記進「最近搜尋」。
+   延後重畫，避免點結果卡片上的按鈕時，按鈕在點下去的瞬間被換掉 */
+qIn.addEventListener("blur",()=>{if(addRecent(qIn.value,true))setTimeout(renderRecent,400);});
+function addRecent(q,later){
+  q=String(q).trim();
+  if(!q||q.length>40||HOTQ.includes(q)||!searchAll(q).length)return false;
+  const r=store.get("jrrecent",[]).filter(x=>x!==q); r.unshift(q);
+  store.set("jrrecent",r.slice(0,6));
+  if(!later)renderRecent();
+  return true;
+}
+function renderRecent(){
+  const r=store.get("jrrecent",[]), box=$("#recentq"); box.innerHTML="";
+  $("#recent-row").hidden=!r.length;
+  r.forEach(q=>{
+    const b=el("button","chip"); b.type="button"; b.textContent=q;
+    b.addEventListener("click",()=>{qIn.value=q;doSearch();addRecent(q);});
+    box.appendChild(b);
+  });
+  const clr=el("button","link","清除"); clr.type="button";
+  clr.addEventListener("click",()=>{store.set("jrrecent",[]);renderRecent();});
+  box.appendChild(clr);
+}
+renderRecent();
+const qclear=$("#qclear");
+qclear.innerHTML=icon("close");
+qclear.addEventListener("click",()=>{qIn.value="";doSearch();qIn.focus();});
 HOTQ.forEach(h=>{
-  const b=el("button","chip",h);
-  b.addEventListener("click",()=>{$("#q").value=h;doSearch();});
+  const b=el("button","chip",h); b.type="button";
+  b.addEventListener("click",()=>{qIn.value=h;doSearch();});
   $("#hotq").appendChild(b);
 });
 /* 尚未搜尋時：功能捷徑 */
@@ -250,6 +455,7 @@ HOTQ.forEach(h=>{
   const grid=el("div","sc-grid");
   TABS.filter(t=>t.d).forEach(t=>{
     const b=el("button","sc-card",'<span class="sc-ic">'+icon(t.ic)+'</span><span class="sc-txt"><b>'+t.l+(t.n?"<em>"+t.n()+"</em>":"")+"</b><small>"+t.d+"</small></span>");
+    b.type="button";
     b.addEventListener("click",()=>show(t.id));
     grid.appendChild(b);
   });
@@ -257,75 +463,71 @@ HOTQ.forEach(h=>{
 })();
 
 /* ---------- 異議處理頁 ---------- */
-function renderObjections(filter){
-  const list=$("#obj-list");list.innerHTML="";
-  QA.forEach((it,i)=>{
-    if(it.type!=="obj")return;
-    if(filter&&filter!=="全部"&&it.cat!==filter)return;
-    const d=el("details","qa");
-    d.appendChild(el("summary",null,it.q));
-    const b=el("div","qa-body");
-    b.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
-    b.appendChild(el("p",null,it.a));
-    if(it.story)b.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事：<b>"+it.story+"</b>"));
-    b.appendChild(el("div","src","出處："+srcLinks(it.src)));
-    b.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a));
-    d.appendChild(b); list.appendChild(d);
-  });
-  const coach=el("div","secttl","帶團隊的問題（輔導）");list.appendChild(coach);
-  QA.forEach((it,i)=>{
-    if(it.type!=="coach")return;
-    if(filter&&filter!=="全部"&&it.cat!==filter)return;
-    const d=el("details","qa");
-    d.appendChild(el("summary",null,it.q));
-    const b=el("div","qa-body");
-    b.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
-    b.appendChild(el("p",null,it.a));
-    if(it.story)b.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事：<b>"+it.story+"</b>"));
-    b.appendChild(el("div","src","出處："+srcLinks(it.src)));
-    b.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a));
-    d.appendChild(b); list.appendChild(d);
-  });
+function qaDetails(it,i){
+  const d=el("details","qa");
+  d.appendChild(el("summary",null,it.q));
+  const b=el("div","qa-body");
+  b.appendChild(el("div",null,'<span class="answer-label">JR 的做法</span>'));
+  b.appendChild(el("p",null,it.a));
+  if(it.story)b.appendChild(el("div","quote",icon("bulb")+" 可搭配的故事："+storyLink(it.story)));
+  b.appendChild(el("div","src","出處："+srcLinks(it.src)));
+  b.appendChild(actionRow("qa",i,"【"+it.q+"】\n\nJR 的做法："+it.a));
+  d.appendChild(b);
+  return d;
 }
-(function(){
-  const cats=["全部",...new Set(QA.map(x=>x.cat))];
-  cats.forEach((c,ix)=>{
-    const b=el("button","chip"+(ix===0?" on":""),c);
-    b.addEventListener("click",()=>{
-      document.querySelectorAll("#obj-filter .chip").forEach(x=>x.classList.remove("on"));
-      b.classList.add("on"); renderObjections(c);
-    });
-    $("#obj-filter").appendChild(b);
+const objList=$("#obj-list"), objToggle=$("#obj-toggle");
+function updObjToggle(){
+  const ds=[...objList.querySelectorAll("details.qa")];
+  const allOpen=ds.length&&ds.every(d=>d.open);
+  objToggle.hidden=!ds.length;
+  objToggle.textContent=allOpen?"全部收合":"全部展開";
+}
+function renderObjections(filter){
+  objList.innerHTML="";
+  const pick=type=>QA.map((it,i)=>[it,i]).filter(([it])=>it.type===type&&(filter==="全部"||it.cat===filter));
+  let n=0;
+  [["obj","對方的異議"],["coach","帶團隊的問題（輔導）"]].forEach(([type,label])=>{
+    const items=pick(type); if(!items.length)return;
+    n+=items.length;
+    objList.appendChild(el("div","secttl",label+"（"+items.length+"）"));
+    items.forEach(([it,i])=>objList.appendChild(qaDetails(it,i)));
   });
-  renderObjections("全部");
-})();
+  $("#obj-meta").innerHTML="共 <b>"+n+"</b> 題";
+  if(!n)objList.appendChild(el("div","empty","此分類目前沒有題目。"));
+  updObjToggle();
+}
+objList.addEventListener("toggle",updObjToggle,true);
+objToggle.addEventListener("click",()=>{
+  const ds=[...objList.querySelectorAll("details.qa")];
+  const open=!ds.every(d=>d.open);
+  ds.forEach(d=>d.open=open);
+  updObjToggle();
+});
+chipFilter($("#obj-filter"),["全部",...new Set(QA.map(x=>x.cat))],
+  c=>QA.filter(x=>c==="全部"||x.cat===c).length, renderObjections);
 
 /* ---------- 主題瀏覽頁 ---------- */
 function renderTr(filter){
   const list=$("#tr-list");list.innerHTML="";
   CATS.forEach(cat=>{
-    if(filter&&filter!=="全部"&&cat!==filter)return;
+    if(filter!=="全部"&&cat!==filter)return;
     const items=TRANSCRIPTS.filter(t=>t.cat===cat);
     if(!items.length)return;
     list.appendChild(el("div","secttl",cat+"（"+items.length+"）"));
     items.forEach(t=>list.appendChild(trCard(t)));
   });
 }
-(function(){
-  const cats=["全部",...CATS.filter(c=>TRANSCRIPTS.some(t=>t.cat===c))];
-  cats.forEach((c,ix)=>{
-    const b=el("button","chip"+(ix===0?" on":""),c);
-    b.addEventListener("click",()=>{
-      document.querySelectorAll("#tr-filter .chip").forEach(x=>x.classList.remove("on"));
-      b.classList.add("on"); renderTr(c);
-    });
-    $("#tr-filter").appendChild(b);
-  });
-  renderTr("全部");
-})();
+const trFilter=chipFilter($("#tr-filter"),["全部",...CATS.filter(c=>TRANSCRIPTS.some(t=>t.cat===c))],
+  c=>TRANSCRIPTS.filter(t=>c==="全部"||t.cat===c).length, renderTr);
 
 /* ---------- JR 智囊（檢索式對話） ---------- */
 const CHAT_WHO='<div class="who"><span class="who-av">'+icon("chat")+"</span>JR 智囊</div>";
+function moreLink(m){
+  if(m.type==="qa")return '<button type="button" class="link" data-ask="'+esc(m.item.q)+'">'+fmtQ(m.item.q)+"</button>";
+  if(m.type==="story")return '<button type="button" class="link" data-q="'+esc(m.item.t)+'">故事《'+m.item.t+"》</button>";
+  if(m.type==="scen")return '<button type="button" class="link" data-scen="'+m.id+'">劇本「'+m.item.t+"」</button>";
+  return '<button type="button" class="link" data-tr="'+m.item.id+'">演講《'+m.item.zh+"》</button>";
+}
 function chatReply(q){
   const rs=searchAll(q);
   const best=rs.find(r=>r.type==="qa");
@@ -333,101 +535,108 @@ function chatReply(q){
   if(best&&best.score>=1){
     const it=best.item;
     html+="<p style='margin:0 0 8px'><b>"+it.q+"</b></p><p style='margin:0'>"+it.a+"</p>";
-    if(it.story)html+='<div class="quote" style="margin:10px 0 0">'+icon("bulb")+' 可搭配的故事：<b>'+it.story+"</b></div>";
+    if(it.story)html+='<div class="quote" style="margin:10px 0 0">'+icon("bulb")+" 可搭配的故事："+storyLink(it.story)+"</div>";
     html+='<div class="src">出處：'+srcLinks(it.src)+"</div>";
     const more=rs.filter(r=>r!==best).slice(0,3);
-    if(more.length){
-      html+='<div style="margin-top:10px;font-size:13.5px;color:var(--muted)">延伸：'+
-        more.map(m=>m.type==="qa"?("「"+m.item.q+"」"):m.type==="story"?("故事《"+m.item.t+"》"):("演講《"+m.item.zh+"》")).join("・")+"</div>";
-    }
+    if(more.length)html+='<div style="margin-top:10px;font-size:13.5px;color:var(--muted)">延伸：'+more.map(moreLink).join("・")+"</div>";
   }else{
     const st=rs.find(r=>r.type==="story"),tr=rs.find(r=>r.type==="tr");
     if(st){
       html+="<p style='margin:0 0 8px'>這個情況可以用 JR 的故事——<b>"+st.item.t+"</b>：</p><p style='margin:0'>"+st.item.s+"</p><p style='margin:8px 0 0'><b>什麼時候用：</b>"+st.item.u+"</p><div class='src'>出處："+storySrcName(st.item.src)+"</div>";
     }else if(tr){
-      html+="<p style='margin:0 0 8px'>這題在《"+tr.item.zh+"》裡有完整教學：</p><p style='margin:0'><b>"+tr.item.one+"</b></p><ul>"+tr.item.pts.map(p=>"<li>"+p+"</li>").join("")+"</ul>";
+      html+="<p style='margin:0 0 8px'>這題在"+srcLinks([tr.item.id])+"裡有完整教學：</p><p style='margin:0'><b>"+tr.item.one+"</b></p><ul>"+tr.item.pts.map(p=>"<li>"+p+"</li>").join("")+"</ul>";
     }else{
       html+="<p style='margin:0'>這個問題我還對不上 JR 的哪一篇教學。試試換個說法（例如「夥伴說不認識人」「被問是不是老鼠會」），或點上面的快速問題。</p>";
     }
   }
   return html;
 }
+function askChat(q){
+  if(curView!=="chat")show("chat");
+  q=String(q).trim(); if(!q)return;
+  const um=el("div","msg user"); um.textContent=q;
+  $("#chatlog").appendChild(um);
+  $("#chatlog").appendChild(el("div","msg jr",CHAT_WHO+chatReply(q)));
+  /* 從提問開始捲，長回答才不會被切掉開頭 */
+  um.scrollIntoView({behavior:"smooth",block:"start"});
+}
 $("#chatform").addEventListener("submit",e=>{
   e.preventDefault();
   const q=$("#chatin").value.trim(); if(!q)return;
   $("#chatin").value="";
-  $("#chatlog").appendChild(el("div","msg user",q));
-  const m=el("div","msg jr",CHAT_WHO+chatReply(q));
-  $("#chatlog").appendChild(m);
-  m.scrollIntoView({behavior:"smooth",block:"end"});
+  askChat(q);
 });
 HOTQ.forEach(h=>{
-  const b=el("button","chip",h);
-  b.addEventListener("click",()=>{$("#chatin").value=h;$("#chatform").dispatchEvent(new Event("submit"));});
+  const b=el("button","chip",h); b.type="button";
+  b.addEventListener("click",()=>askChat(h));
   $("#quickq").appendChild(b);
 });
-$("#chatlog").appendChild(el("div","msg jr",CHAT_WHO+"<p style='margin:0'>把你遇到的狀況直接打出來，例如「新人說他沒時間」——我會從 JR 的 27 篇演講裡找出對應做法與出處。也可以點上面的快速問題。</p>"));
+$("#chatlog").appendChild(el("div","msg jr",CHAT_WHO+"<p style='margin:0'>把你遇到的狀況直接打出來，例如「新人說他沒時間」——我會從 JR 的 27 篇演講裡找出對應做法與出處。</p>"));
 
 /* ---------- 劇本產生器 ---------- */
-(function(){
-  const pick=$("#scen-pick");
-  SCENARIOS.forEach((s,i)=>{
-    const b=el("button",null,icon(s.icon)+" "+s.t);
-    b.addEventListener("click",()=>{
-      document.querySelectorAll("#scen-pick button").forEach(x=>x.classList.remove("on"));
-      b.classList.add("on"); renderScen(i);
-    });
-    pick.appendChild(b);
-  });
-  function renderScen(i){
-    const s=SCENARIOS[i]; const out=$("#scen-out"); out.innerHTML="";
-    const c=el("div","card");
-    c.appendChild(el("h3",null,icon(s.icon)+" "+s.t+" — JR 式劇本"));
-    const sec=(label,html)=>{const d=el("div","script-sec");d.appendChild(el("span","answer-label",label));d.appendChild(el("div",null,html));c.appendChild(d);};
-    sec("開場白","<div class='quote serif'>"+s.open+"</div>");
-    sec("關鍵句與心法","<ul>"+s.key.map(k=>"<li>"+k+"</li>").join("")+"</ul>");
-    sec("可用故事",s.story);
-    sec("收尾","<div class='quote serif'>"+s.close+"</div>");
-    sec('地雷（別做）',"<div class='warnbox'>"+icon("warn")+" "+s.avoid+"</div>");
-    c.appendChild(el("div","src","出處："+storySrcName(s.src)));
-    const txt=s.t+"\n\n【開場】"+s.open+"\n\n【關鍵】\n"+s.key.map(k=>"• "+k).join("\n")+"\n\n【收尾】"+s.close+"\n\n【避免】"+s.avoid;
-    const row=el("div","actions"); const sb=el("button","abtn",icon("share")+"分享劇本");
-    sb.addEventListener("click",()=>shareText(txt)); row.appendChild(sb); c.appendChild(row);
-    out.appendChild(c); out.scrollIntoView({behavior:"smooth",block:"start"});
-  }
-})();
+function scenText(s){
+  return s.t+"\n\n【開場】"+s.open+"\n\n【關鍵】\n"+s.key.map(k=>"• "+k).join("\n")+"\n\n【收尾】"+s.close+"\n\n【避免】"+s.avoid;
+}
+function scenCard(i){
+  const s=SCENARIOS[i];
+  const c=el("div","card");
+  c.appendChild(el("h3",null,icon(ICONS[s.icon]?s.icon:"clapper")+" "+s.t+" — JR 式劇本"));
+  const sec=(label,html)=>{const d=el("div","script-sec");d.appendChild(el("span","answer-label",label));d.appendChild(el("div",null,html));c.appendChild(d);};
+  sec("開場白","<div class='quote serif'>"+s.open+"</div>");
+  sec("關鍵句與心法","<ul>"+s.key.map(k=>"<li>"+k+"</li>").join("")+"</ul>");
+  sec("可用故事",s.story);
+  sec("收尾","<div class='quote serif'>"+s.close+"</div>");
+  sec("地雷（別做）","<div class='warnbox'>"+icon("warn")+" "+s.avoid+"</div>");
+  c.appendChild(el("div","src","出處："+storySrcName(s.src)));
+  c.appendChild(actionRow("scen",i,scenText(s)));
+  return c;
+}
+const scenPick=$("#scen-pick");
+SCENARIOS.forEach((s,i)=>{
+  const b=el("button",null,icon(s.icon)+" "+s.t); b.type="button"; b.setAttribute("aria-pressed","false");
+  b.addEventListener("click",()=>selectScen(i));
+  scenPick.appendChild(b);
+});
+function selectScen(i){
+  scenPick.querySelectorAll("button").forEach((x,ix)=>{x.classList.toggle("on",ix===i);x.setAttribute("aria-pressed",ix===i?"true":"false");});
+  const out=$("#scen-out"); out.innerHTML="";
+  const c=scenCard(i);
+  const again=el("button","abtn",icon("refresh")+"換一個情境"); again.type="button";
+  again.addEventListener("click",()=>scenPick.scrollIntoView({behavior:"smooth",block:"start"}));
+  c.querySelector(".actions").appendChild(again);
+  out.appendChild(c);
+  out.scrollIntoView({behavior:"smooth",block:"start"});
+}
 
 /* ---------- 金句故事頁 ---------- */
-function renderStories(filter){
+let stCat="全部";
+function renderStories(){
   const list=$("#st-list");list.innerHTML="";
-  list.style.display="block";
+  const kw=$("#st-q").value.trim().toLowerCase();
+  let total=0;
   TRANSCRIPTS.forEach(tr=>{
     const items=[];
     STORIES.forEach((it,i)=>{
       if(String(it.src).trim()!==tr.id)return;
-      if(filter&&filter!=="全部"&&it.cat!==filter)return;
+      if(stCat!=="全部"&&it.cat!==stCat)return;
+      if(kw&&!(it.t+it.s+it.u).toLowerCase().includes(kw))return;
       items.push([it,i]);
     });
     if(!items.length)return;
+    total+=items.length;
     list.appendChild(el("div","secttl","《"+tr.zh+"》（"+items.length+"）"));
     const grid=el("div","grid2");
     items.forEach(([it,i])=>grid.appendChild(storyCard(it,i)));
     list.appendChild(grid);
   });
-  if(!list.children.length)list.appendChild(el("div","empty","此分類目前沒有故事。"));
+  $("#st-meta").innerHTML=(kw||stCat!=="全部")?"符合 <b>"+total+"</b> 則":"共 <b>"+total+"</b> 則";
+  if(!total)list.appendChild(el("div","empty",kw?"沒有包含「"+esc(kw)+"」的故事，換個關鍵字試試。":"此分類目前沒有故事。"));
 }
-(function(){
-  const cats=["全部",...new Set(STORIES.map(x=>x.cat))];
-  cats.forEach((c,ix)=>{
-    const b=el("button","chip"+(ix===0?" on":""),c);
-    b.addEventListener("click",()=>{
-      document.querySelectorAll("#st-filter .chip").forEach(x=>x.classList.remove("on"));
-      b.classList.add("on"); renderStories(c);
-    });
-    $("#st-filter").appendChild(b);
-  });
-  renderStories("全部");
-})();
+chipFilter($("#st-filter"),["全部",...new Set(STORIES.map(x=>x.cat))],
+  c=>STORIES.filter(x=>c==="全部"||x.cat===c).length, c=>{stCat=c;renderStories();});
+let stTimer=null;
+$("#st-q").addEventListener("input",e=>{if(e.isComposing)return;clearTimeout(stTimer);stTimer=setTimeout(renderStories,200);});
+$("#st-q").addEventListener("compositionend",()=>{clearTimeout(stTimer);stTimer=setTimeout(renderStories,200);});
 
 /* ---------- 帶人 SOP ---------- */
 (function(){
@@ -445,72 +654,101 @@ function renderStories(filter){
 })();
 
 /* ---------- 90 天追蹤器 ---------- */
+let trkSel=null; /* 正在補登的第幾天；null＝今天 */
+const pad2=n=>String(n).padStart(2,"0");
+/* 一律用「本地」日期，避免台灣早上 8 點前被算成前一天 */
+const ymd=dt=>dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate());
+function parseYmd(s){const p=String(s).split("-").map(Number);return new Date(p[0],p[1]-1,p[2]);}
+function todayMid(){const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());}
+const fmtDate=dt=>dt.getFullYear()+"/"+pad2(dt.getMonth()+1)+"/"+pad2(dt.getDate());
+const WEEK="日一二三四五六";
 function trkState(){
   let s=store.get("jr90",null);
-  if(!s){s={start:new Date().toISOString().slice(0,10),days:{}};store.set("jr90",s);}
+  if(!s||!s.start||isNaN(parseYmd(s.start))){s={start:ymd(new Date()),days:{}};store.set("jr90",s);}
+  if(!s.days)s.days={};
   return s;
 }
-function dayNum(s){
-  const start=new Date(s.start+"T00:00:00");
-  const n=Math.floor((Date.now()-start.getTime())/86400000)+1;
-  return Math.min(Math.max(n,1),90);
-}
-function fmtDate(dt){
-  return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+String(dt.getDate()).padStart(2,"0");
-}
-function dateOfDay(s,n){
-  const start=new Date(s.start+"T00:00:00");
-  return new Date(start.getTime()+(n-1)*86400000);
-}
+function rawDay(s){return Math.round((todayMid()-parseYmd(s.start))/86400000)+1;}
+function dayNum(s){return Math.min(Math.max(rawDay(s),1),90);}
+function dateOfDay(s,n){const d=parseYmd(s.start);d.setDate(d.getDate()+n-1);return d;}
+function doneOf(s,n){const dd=s.days[n]||{};return CHECKS.filter(c=>dd[c.k]).length;}
+/* 連續打卡：今天還沒勾不算中斷，從昨天往回數 */
+function streakOf(s,d){let n=d,k=0;if(!doneOf(s,n))n--;while(n>=1&&doneOf(s,n)){k++;n--;}return k;}
 function renderTracker(){
-  const s=trkState(); const d=dayNum(s);
+  const s=trkState(), raw=rawDay(s), d=dayNum(s);
+  if(trkSel!=null&&(trkSel<1||trkSel>=d))trkSel=null;
+  const sel=trkSel||d, past=sel!==d;
+  const pct=Math.round(d/90*100);
   $("#trk-daynum").textContent=d;
-  $("#trk-start").value=s.start;
-  $("#trk-today").textContent=fmtDate(new Date());
+  $("#trk-pct").textContent=pct+"%";
+  $("#trk-bar").style.width=pct+"%";
+  $("#trk-left").innerHTML=raw>90?"<b>已完成 90 天</b>":"還剩 <b>"+(90-d)+"</b> 天";
+  const si=$("#trk-start"); si.value=s.start; si.max=ymd(new Date());
   $("#trk-end").textContent=fmtDate(dateOfDay(s,90));
-  const today=s.days[d]||{};
-  const doneCount=CHECKS.filter(c=>today[c.k]).length;
-  $("#trk-bar").style.width=Math.round(d/90*100)+"%";
-  $("#trk-pct").textContent=Math.round(d/90*100)+"%";
-  $("#trk-done").textContent=doneCount+" / "+CHECKS.length;
+  let full=0; for(let i=1;i<=d;i++)if(doneOf(s,i)===CHECKS.length)full++;
+  $("#trk-done").innerHTML=doneOf(s,d)+"<small>/ "+CHECKS.length+"</small>";
+  $("#trk-streak").innerHTML=streakOf(s,d)+"<small>天</small>";
+  $("#trk-full").innerHTML=full+"<small>天</small>";
+  $("#trk-fin").hidden=raw<=90;
+  const dt=dateOfDay(s,sel);
+  $("#trk-ckhead").classList.toggle("past",past);
+  $("#trk-ckttl").textContent=past?"補登：第 "+sel+" 天":"今天的基本功";
+  $("#trk-ckdate").textContent=(dt.getMonth()+1)+"/"+dt.getDate()+"（週"+WEEK[dt.getDay()]+"）· 第 "+sel+" 天 · 完成 "+doneOf(s,sel)+"/"+CHECKS.length;
+  $("#trk-edit").hidden=!past;
   const box=$("#trk-checks");box.innerHTML="";
+  const cur=s.days[sel]||{};
   CHECKS.forEach(c=>{
-    const lab=el("label","ck"+(today[c.k]?" done":""));
-    const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!today[c.k];
-    cb.addEventListener("change",()=>{
-      const st=trkState(); const dd=st.days[d]||{}; dd[c.k]=cb.checked; st.days[d]=dd; store.set("jr90",st); renderTracker();
-      if(cb.checked&&CHECKS.every(x=>dd[x.k]))toast("今日全數完成！90 天就是這樣堆出來的");
-    });
-    const t=el("div","ck-t","<b>"+c.t+"</b><span>"+c.d+"</span>");
-    lab.append(cb,t); box.appendChild(lab);
+    const lab=el("label","ck"+(cur[c.k]?" done":""));
+    const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!cur[c.k];cb.dataset.k=c.k;
+    cb.addEventListener("change",()=>setCheck(sel,c.k,cb.checked));
+    lab.append(cb,el("div","ck-t","<b>"+c.t+"</b><span>"+c.d+"</span>")); box.appendChild(lab);
   });
   const grid=$("#daygrid");grid.innerHTML="";
   for(let i=1;i<=90;i++){
-    const cell=el("div",null,"");
-    const dd=s.days[i]||{}; const n=CHECKS.filter(c=>dd[c.k]).length;
-    if(n>=CHECKS.length)cell.classList.add("p3");
-    else if(n>=3)cell.classList.add("p2");
-    else if(n>=1)cell.classList.add("p1");
-    if(i===d)cell.classList.add("today");
-    cell.title=fmtDate(dateOfDay(s,i))+"（第 "+i+" 天）："+n+"/"+CHECKS.length;
-    grid.appendChild(cell);
+    const n=doneOf(s,i);
+    const b=el("button",n>=CHECKS.length?"p3":n>=3?"p2":n>=1?"p1":null,String(i)); b.type="button";
+    if(i===d)b.classList.add("today");
+    if(past&&i===sel)b.classList.add("sel");
+    const lbl=fmtDate(dateOfDay(s,i))+"（第 "+i+" 天）："+n+"/"+CHECKS.length+(i>d?"，還沒到":"");
+    b.title=lbl; b.setAttribute("aria-label",lbl);
+    if(i>d)b.disabled=true;
+    else b.addEventListener("click",()=>{trkSel=i===d?null:i;renderTracker();$("#trk-ckhead").scrollIntoView({behavior:"smooth",block:"nearest"});});
+    grid.appendChild(b);
   }
+}
+function setCheck(n,k,v){
+  const st=trkState(); const dd=st.days[n]||{}; dd[k]=v; st.days[n]=dd; store.set("jr90",st);
+  renderTracker();
+  const cb=document.querySelector('#trk-checks input[data-k="'+k+'"]'); if(cb)cb.focus({preventScroll:true});
+  if(v&&CHECKS.every(x=>dd[x.k]))toast(n===dayNum(st)?"今日全數完成！90 天就是這樣堆出來的":"第 "+n+" 天補登完成");
+}
+function resetTracker(){
+  if(!confirm("確定要歸零、從今天重新開始 90 天嗎？目前的打卡紀錄會清除。"))return;
+  store.set("jr90",{start:ymd(new Date()),days:{}}); trkSel=null;
+  renderTracker(); window.scrollTo({top:0,behavior:"smooth"}); toast("新的 90 天，開始！");
 }
 $("#trk-start").addEventListener("change",e=>{
   const v=e.target.value; if(!v)return;
-  const picked=new Date(v+"T00:00:00");
-  if(picked.getTime()>Date.now()){toast("開始日期不能是未來");renderTracker();return;}
-  const st=trkState(); st.start=v; store.set("jr90",st); renderTracker();
+  if(parseYmd(v)>todayMid()){toast("開始日期不能是未來");renderTracker();return;}
+  const st=trkState(); st.start=v; store.set("jr90",st); trkSel=null; renderTracker();
   toast("開始日期已更新："+v.replace(/-/g,"/"));
 });
-$("#trk-reset").addEventListener("click",()=>{
-  if(confirm("確定要歸零、從今天重新開始 90 天嗎？")){
-    store.set("jr90",{start:new Date().toISOString().slice(0,10),days:{}});
-    renderTracker(); toast("新的 90 天，開始！");
-  }
-});
+$("#trk-back").addEventListener("click",()=>{trkSel=null;renderTracker();});
+$("#trk-reset").innerHTML=icon("refresh")+"重新開始 90 天";
+$("#trk-reset").addEventListener("click",resetTracker);
+$("#trk-again").addEventListener("click",resetTracker);
 
 /* ---------- 主題測驗 ---------- */
+const RATES=["還不熟","答得出一半","能教別人了"];
+function renderQuizSum(){
+  const r=store.get("jrquiz",{}), N=QUIZ.length;
+  const c=[0,1,2].map(lv=>Object.keys(r).filter(k=>r[k]===lv&&QUIZ[k]).length);
+  const w=n=>(n/N*100).toFixed(2)+"%";
+  $("#qz-score").innerHTML='<div class="qz-sum"><div class="qz-n">'+c[2]+"<small> / "+N+' 個主題能教別人了</small></div>'+
+    '<div class="bar stack" role="img" aria-label="能教別人 '+c[2]+"、答得出一半 "+c[1]+"、還不熟 "+c[0]+'"><i class="g" style="width:'+w(c[2])+'"></i><i class="a" style="width:'+w(c[1])+'"></i><i class="w" style="width:'+w(c[0])+'"></i></div>'+
+    '<div class="qz-leg"><span><i class="g"></i>能教別人 '+c[2]+'</span><span><i class="a"></i>答得出一半 '+c[1]+'</span><span><i class="w"></i>還不熟 '+c[0]+'</span><span><i></i>還沒自評 '+(N-c[0]-c[1]-c[2])+"</span></div>"+
+    "<p>JR：「這個考試通過了會讓你賺錢。」</p></div>";
+}
 function renderQuiz(){
   const rate=store.get("jrquiz",{});
   const list=$("#qz-list");list.innerHTML="";
@@ -518,35 +756,82 @@ function renderQuiz(){
     const c=el("div","card"+(rate[i]!=null?" rated-"+rate[i]:""));
     c.appendChild(el("h3",null,'<span class="qz-no">'+(i+1)+"</span>請用一段話，向一個完全不懂的人解釋——<b>"+qz.t+"</b>"));
     const d=el("details",null,"<summary class='more'>先自己說一遍，再展開對照 JR 的版本</summary>");
-    const inner=el("div","quote serif",qz.m); d.appendChild(inner); c.appendChild(d);
+    d.appendChild(el("div","quote serif",qz.m)); c.appendChild(d);
     const rateRow=el("div","qz-rate");
-    ["還不熟","答得出一半","能教別人了"].forEach((lbl,lv)=>{
-      const b=el("button",rate[i]===lv?("sel-"+lv):"",lbl);
-      b.addEventListener("click",()=>{const r=store.get("jrquiz",{});r[i]=lv;store.set("jrquiz",r);renderQuiz();});
+    RATES.forEach((lbl,lv)=>{
+      const b=el("button",rate[i]===lv?"sel-"+lv:"",lbl); b.type="button"; b.setAttribute("aria-pressed",rate[i]===lv?"true":"false");
+      /* 原地更新，不重畫整份清單——展開的 JR 版本不會被收起來 */
+      b.addEventListener("click",()=>{
+        const r=store.get("jrquiz",{}); r[i]=lv; store.set("jrquiz",r);
+        c.className="card rated-"+lv;
+        rateRow.querySelectorAll("button").forEach((x,ix)=>{x.className=ix===lv?"sel-"+ix:"";x.setAttribute("aria-pressed",ix===lv?"true":"false");});
+        renderQuizSum();
+      });
       rateRow.appendChild(b);
     });
     c.appendChild(rateRow); list.appendChild(c);
   });
-  const done=Object.values(rate).filter(v=>v===2).length;
-  $("#qz-score").innerHTML='<div class="qz-sum"><div class="qz-n">'+done+"<small> / "+QUIZ.length+' 個主題能教別人了</small></div><div class="bar"><i style="width:'+Math.round(done/QUIZ.length*100)+'%"></i></div><p>JR：「這個考試通過了會讓你賺錢。」</p></div>';
+  renderQuizSum();
 }
 renderQuiz();
 
 /* ---------- 收藏頁 ---------- */
 function renderFav(){
-  const f=store.get("jrfav",[]); const list=$("#fav-list");list.innerHTML="";
-  if(!f.length){list.appendChild(el("div","empty","還沒有收藏。到任何卡片點「收藏」就會出現在這裡。"));return;}
-  f.forEach(k=>{
-    const [type,id]=k.split(":");
-    if(type==="qa"&&QA[+id])list.appendChild(qaCard(QA[+id],+id));
-    if(type==="story"&&STORIES[+id])list.appendChild(storyCard(STORIES[+id],+id));
-    if(type==="tr"){const t=TRANSCRIPTS.find(x=>x.id===id);if(t)list.appendChild(trCard(t));}
+  const f=favs().slice().reverse(); /* 最新收藏在前 */
+  const list=$("#fav-list");list.innerHTML="";
+  [["qa","問答"],["scen","情境劇本"],["story","金句故事"],["tr","演講"]].forEach(([type,label])=>{
+    const cards=[];
+    f.forEach(k=>{
+      const at=k.indexOf(":"), ty=k.slice(0,at), id=k.slice(at+1);
+      if(ty!==type)return;
+      if(type==="qa"&&QA[+id])cards.push(qaCard(QA[+id],+id));
+      else if(type==="scen"&&SCENARIOS[+id])cards.push(scenCard(+id));
+      else if(type==="story"&&STORIES[+id])cards.push(storyCard(STORIES[+id],+id));
+      else if(type==="tr"){const t=TRANSCRIPTS.find(x=>x.id===id);if(t)cards.push(trCard(t));}
+    });
+    if(!cards.length)return;
+    list.appendChild(el("div","secttl",label+"（"+cards.length+"）"));
+    cards.forEach(c=>list.appendChild(c));
   });
+  if(!list.children.length){
+    const e=el("div","empty","還沒有收藏。<br>看到好用的問答、故事或劇本，點卡片下方的「收藏」就會出現在這裡。");
+    e.appendChild(el("div","actions",
+      '<button type="button" class="abtn" data-go="objections">'+icon("shield")+"逛逛異議處理</button>"+
+      '<button type="button" class="abtn" data-go="stories">'+icon("sparkle")+"逛逛金句故事</button>"));
+    list.appendChild(e);
+  }
 }
+updFavCount();
+
+/* ---------- 加到主畫面 + 離線使用 ---------- */
+(function(){
+  const row=$("#installrow"), btn=$("#installbtn");
+  btn.innerHTML=icon("download")+"<span>加到手機主畫面</span>";
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  let deferred=null;
+  if(!standalone&&isIOS)row.hidden=false;
+  addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;row.hidden=false;});
+  addEventListener("appinstalled",()=>{row.hidden=true;deferred=null;toast("已加到主畫面，之後沒網路也能開");});
+  btn.addEventListener("click",async()=>{
+    if(deferred){
+      closeMenu(); deferred.prompt();
+      try{const r=await deferred.userChoice;if(r.outcome==="accepted")row.hidden=true;}catch(e){}
+      deferred=null;
+    }else{
+      closeMenu(); toast("在 Safari 點下方「分享」→「加入主畫面」");
+    }
+  });
+  /* 網站本身就是單一檔案，開著時斷網內容照常可用 */
+  addEventListener("offline",()=>toast("目前沒有網路，已載入的內容照常可用"));
+  if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&!/\/site\//.test(location.pathname)){
+    addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  }
+})();
 
 /* ---------- 啟動 ---------- */
 (function(){
   const h=(location.hash||"").replace("#","");
-  show(TABS.some(t=>t.id===h)?h:"search");
+  show(TABS.some(t=>t.id===h)?h:"search",{push:false});
 })();
 </script>
