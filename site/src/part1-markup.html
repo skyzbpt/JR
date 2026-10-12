@@ -281,6 +281,7 @@ summary.more:hover{color:var(--accent-hover)}
 .sfield input:focus~kbd,.sfield input:not(:placeholder-shown)~kbd{display:none}
 @media (hover:none),(pointer:coarse){.sfield kbd{display:none}}
 .rmeta{margin:20px 2px -12px;font-size:13.5px;color:var(--muted)}
+mark{background:color-mix(in srgb,var(--accent-2) 26%,transparent);color:inherit;border-radius:3px;padding:0 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .rmeta b{color:var(--ink);font-variant-numeric:tabular-nums}
 .btn-primary,#qbtn{
   flex:0 0 auto; padding:12px 24px; font-size:15.5px; border:none; border-radius:12px;
@@ -661,6 +662,25 @@ body[data-view="chat"] #totop{display:none}
   #totop{right:max(16px,env(safe-area-inset-right));bottom:calc(14px + var(--bnav-h) + env(safe-area-inset-bottom))}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ===================== 列印 ===================== */
+@media print{
+  :root,:root[data-theme],:root:not([data-theme="light"]){
+    --sky:#fff; --paper:#fff; --surface:#fff; --surface-2:#f6f9fc;
+    --ink:#111; --muted:#444; --accent:#1c6cb3; --accent-ink:#fff; --accent-soft:#eef5fb;
+    --accent-2:#3d9be0; --gold:#16659f; --gold-soft:#f3f8fd; --line:#cfd8e0; --chip:#e8eef4;
+    --good:#2e7d4f; --warn:#c22e2e; --p2-ink:#111; --shadow:none; --shadow-lg:none; --glow:none;
+    color-scheme:light;
+  }
+  body{background:#fff}
+  #topbar,#bnav,#totop,#toast,#drawer,#backdrop,.skip,.foot,.actions,.listbar,.search-panel,#shortcuts,
+  .tagrow,.ffield,.fmeta,#scen-pick,#scen-out .empty,.qz-rate,.chatform,.quickq,.trk-foot,.trk-edit{display:none!important}
+  main{padding:0;max-width:none;zoom:1!important}
+  .view.on{animation:none}
+  .card,details.qa,.sopstep,.trk-stat{break-inside:avoid}
+  .card,details.qa{box-shadow:none}
+  a{color:inherit}
+}
 </style>
 
 <a class="skip" href="#main">跳到主要內容</a>
@@ -814,6 +834,7 @@ body[data-view="chat"] #totop{display:none}
   <section class="view" id="v-sop">
     <h2 class="vh">新人帶人 SOP 流程</h2>
     <p class="vd">JR 的完整帶人流程——從填滿漏斗到 ABC 複製。「任何阻止『人帶出人』的做法，都是錯的做法。」每一步都附常見錯誤。</p>
+    <div class="listbar" style="margin:0 0 16px"><span class="fmeta">帶新人前可以印出來，一步一步對照。</span><button class="abtn" type="button" id="sop-print"></button></div>
     <div id="sop-list"></div>
   </section>
 
@@ -822,7 +843,9 @@ body[data-view="chat"] #totop{display:none}
     <h2 class="vh">主題測驗（Themes Quiz）</h2>
     <p class="vd">JR 在「成為招募大師」中的原話：「你能不能把每個主題寫成一段話？寫不出來，你就還沒準備好建這個事業。這個考試通過了會讓你賺錢。」先自己回答，再展開 JR 的版本對照，最後自評。</p>
     <div id="qz-score"></div>
-    <div id="qz-list"></div>
+    <div class="tagrow" id="qz-filter" role="group" aria-label="依自評篩選"></div>
+    <div class="empty" id="qz-empty" hidden>這一類目前沒有主題。</div>
+    <div id="qz-list" style="margin-top:14px"></div>
   </section>
 
   <!-- 收藏 -->
