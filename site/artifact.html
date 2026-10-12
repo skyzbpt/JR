@@ -1,5 +1,5 @@
 <title>JR 智庫 — 美安事業問答知識庫</title>
-<script>try{var t=JSON.parse(localStorage.getItem("jrtheme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+<script>try{var t=JSON.parse(localStorage.getItem("jrtheme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);var f=JSON.parse(localStorage.getItem("jrfont"));if(f===1||f===2)document.documentElement.setAttribute("data-fs",f);}catch(e){}</script>
 <style>
 /* ===================== 色彩（天空藍主題） ===================== */
 :root{
@@ -13,7 +13,7 @@
   --shadow:0 1px 2px rgba(19,56,94,.05),0 6px 20px rgba(19,56,94,.07);
   --shadow-lg:0 2px 6px rgba(19,56,94,.08),0 16px 40px rgba(19,56,94,.14);
   --glow:0 4px 14px rgba(28,108,179,.28);
-  --radius:14px;
+  --radius:14px; --p2-ink:#132a40;
   --gutter:20px; --bnav-h:0px;
   color-scheme:light;
 }
@@ -28,11 +28,12 @@
     --topbar:rgba(12,32,52,.8);
     --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.22);
     --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 16px 40px rgba(0,0,0,.4);
-    --glow:0 4px 14px rgba(0,0,0,.35);
+    --glow:0 4px 14px rgba(0,0,0,.35); --p2-ink:#06182a;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
+  --p2-ink:#06182a;
   --sky:#0f2740; --paper:#0a1a2b; --surface:#12283e; --surface-2:#16304a;
   --ink:#e6eef6; --muted:#9ab2c8;
   --accent:#6cb6ef; --accent-hover:#8ec8f4; --accent-ink:#06182a; --accent-soft:#173855;
@@ -67,6 +68,8 @@ a{color:var(--accent)}
 .skip{position:fixed;left:12px;top:-60px;z-index:100;background:var(--accent);color:var(--accent-ink);padding:8px 16px;border-radius:999px;font-size:14px;text-decoration:none;transition:top .15s}
 .skip:focus{top:12px}
 main:focus{outline:none}
+:root[data-fs="1"] main{zoom:1.12}
+:root[data-fs="2"] main{zoom:1.25}
 .link{
   border:none; background:none; padding:0; margin:0; font:inherit; color:var(--accent); cursor:pointer; text-align:inherit;
   text-decoration:underline; text-decoration-color:color-mix(in srgb,var(--accent) 35%,transparent); text-underline-offset:3px;
@@ -314,6 +317,27 @@ summary.more:hover{color:var(--accent-hover)}
 .sc-txt{display:block;min-width:0}
 .sc-card small{display:block;font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:4px}
 
+/* 今天：每日金句 + 打卡進度 */
+.today{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px;margin-top:22px}
+.today .card{margin:0}
+.today-q .answer-label{margin-bottom:2px}
+.today-q h3{margin:2px 0 0}
+.today-q .quote{margin:10px 0 8px}
+.today-q p{margin:6px 0 0;font-size:14.5px}
+.today-trk{
+  display:flex; flex-direction:column; justify-content:center; gap:10px; text-align:left; width:100%;
+  padding:18px 20px; border-radius:var(--radius); border:1px solid var(--line); background:var(--surface);
+  color:var(--ink); cursor:pointer; font-family:inherit; box-shadow:var(--shadow); transition:border-color .15s,box-shadow .15s;
+}
+.today-trk:hover{border-color:var(--accent);box-shadow:var(--shadow-lg)}
+.today-trk .answer-label{display:flex}
+.today-trk b{font-size:30px;line-height:1.1;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.today-trk b small{font-size:14px;font-weight:400;color:var(--muted);margin-left:4px}
+.today-trk .bar{flex:none;width:100%}
+.today-trk span.tt{font-size:13.5px;color:var(--muted)}
+.today-trk .go{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--accent)}
+@media(max-width:760px){.today{grid-template-columns:1fr;gap:12px}.today-trk{order:-1;padding:14px 16px;gap:8px}}
+
 /* ===================== 異議處理（摺疊清單） ===================== */
 details.qa{
   background:var(--surface); border:1px solid var(--line); border-radius:12px;
@@ -390,7 +414,7 @@ details.qa .qa-body p{margin:8px 0}
   border:1px solid var(--line); border-radius:999px; background:var(--surface-2); color:var(--ink);
   padding:2px 10px; font-family:inherit; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; min-width:0;
 }
-.trk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.trk-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .trk-stat{background:var(--accent-soft);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:1px;min-width:0}
 .trk-stat span{font-size:12.5px;color:var(--muted);letter-spacing:.5px}
 .trk-stat b{font-size:22px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.35}
@@ -429,13 +453,13 @@ details.qa .qa-body p{margin:8px 0}
 #daygrid{display:grid;grid-template-columns:repeat(15,1fr);gap:6px;max-width:760px}
 #daygrid button{
   aspect-ratio:1; min-width:0; padding:0; border:none; border-radius:6px; background:var(--chip); cursor:pointer;
-  font-size:11px; font-weight:600; line-height:1; font-family:inherit; color:color-mix(in srgb,var(--muted) 80%,transparent); font-variant-numeric:tabular-nums;
+  font-size:11px; font-weight:600; line-height:1; font-family:inherit; color:var(--muted); font-variant-numeric:tabular-nums;
   transition:transform .1s;
 }
 #daygrid button:hover:not(:disabled){transform:scale(1.12)}
 #daygrid button:disabled{cursor:default;opacity:.5}
 #daygrid .p1{background:color-mix(in srgb,var(--accent) 30%,var(--chip));color:var(--ink)}
-#daygrid .p2{background:color-mix(in srgb,var(--accent) 65%,var(--chip));color:var(--accent-ink)}
+#daygrid .p2{background:color-mix(in srgb,var(--accent) 65%,var(--chip));color:var(--p2-ink)}
 #daygrid .p3{background:var(--accent);color:var(--accent-ink)}
 #daygrid .today{outline:2px solid var(--accent-2);outline-offset:2px}
 #daygrid .sel{outline:2px solid var(--ink);outline-offset:2px}
@@ -445,12 +469,13 @@ details.qa .qa-body p{margin:8px 0}
 .trk-legend i.p2{background:color-mix(in srgb,var(--accent) 65%,var(--chip))}
 .trk-legend i.p3{background:var(--accent)}
 .trk-legend i.today{background:none;outline:2px solid var(--accent-2);outline-offset:-2px;margin-left:12px}
-.trk-foot{display:flex;justify-content:flex-end;margin-top:18px;padding-top:12px;border-top:1px dashed var(--line)}
+.trk-foot{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px;margin-top:18px;padding-top:12px;border-top:1px dashed var(--line)}
 .dangerbtn{
   display:inline-flex; align-items:center; gap:6px; border:none; background:none; color:var(--muted); cursor:pointer;
   font-family:inherit; font-size:13px; padding:6px 12px; border-radius:999px; transition:color .15s,background .15s;
 }
 .dangerbtn:hover{color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.dangerbtn.safe:hover{color:var(--accent);background:var(--accent-soft)}
 
 /* ===================== 主題測驗 ===================== */
 .qz-sum{
@@ -479,16 +504,16 @@ details.qa .qa-body p{margin:8px 0}
   font-size:14px; font-weight:800; font-variant-numeric:tabular-nums; vertical-align:1px;
 }
 .card.rated-2{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
-.card.rated-2 .qz-no{background:color-mix(in srgb,var(--good) 15%,var(--surface));color:var(--good)}
+.card.rated-2 .qz-no{background:color-mix(in srgb,var(--good) 15%,var(--surface));color:color-mix(in srgb,var(--good) 80%,var(--ink))}
 .qz-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .qz-rate button{
   padding:8px 6px; border-radius:999px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted);
   cursor:pointer; font-family:inherit; font-size:14px; transition:all .15s;
 }
 .qz-rate button:hover{border-color:var(--accent);color:var(--accent)}
-.qz-rate button.sel-0{background:color-mix(in srgb,var(--warn) 14%,var(--surface));color:var(--warn);border-color:var(--warn);font-weight:700}
+.qz-rate button.sel-0{background:color-mix(in srgb,var(--warn) 14%,var(--surface));color:color-mix(in srgb,var(--warn) 80%,var(--ink));border-color:var(--warn);font-weight:700}
 .qz-rate button.sel-1{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);font-weight:700}
-.qz-rate button.sel-2{background:color-mix(in srgb,var(--good) 14%,var(--surface));color:var(--good);border-color:var(--good);font-weight:700}
+.qz-rate button.sel-2{background:color-mix(in srgb,var(--good) 14%,var(--surface));color:color-mix(in srgb,var(--good) 80%,var(--ink));border-color:var(--good);font-weight:700}
 
 /* ===================== 劇本產生器 ===================== */
 .scen-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:10px;margin-bottom:20px}
@@ -555,7 +580,13 @@ body[data-view="chat"] #totop{display:none}
 .drawer-item:hover{background:var(--surface-2)}
 .drawer-item.on{color:var(--accent);font-weight:700;background:var(--accent-soft)}
 .drawer-item .cnt{margin-left:auto}
-.drawer-extra{padding:6px 10px;border-top:1px solid var(--line)}
+.drawer-sec{margin:10px 14px 6px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;letter-spacing:1px;color:var(--muted)}
+.fs-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px 10px}
+.fs-row>span{display:flex;align-items:center;gap:12px;font-size:15.5px}
+.fs-row>span .ic{width:1.2em;height:1.2em;color:var(--accent)}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.seg button{border:none;background:none;color:var(--muted);font-family:inherit;font-size:13px;padding:4px 11px;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
 .drawer-foot{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;line-height:1.6}
 
 /* ===================== 底部導覽（手機） ===================== */
@@ -622,7 +653,7 @@ body[data-view="chat"] #totop{display:none}
   .trk-arrow{display:none}
   .trk-range>span:last-child{flex-basis:100%}
   #trk-daynum{font-size:42px}
-  .trk-stats{gap:8px}
+  .trk-stats{grid-template-columns:1fr 1fr;gap:8px}
   .trk-stat{padding:9px 12px}
   .trk-stat b{font-size:20px}
   #daygrid{grid-template-columns:repeat(10,1fr);gap:6px}
@@ -656,8 +687,15 @@ body[data-view="chat"] #totop{display:none}
     <b class="serif">功能選單</b>
     <button id="drawer-close" aria-label="關閉選單"></button>
   </div>
-  <div class="drawer-body" id="drawer-items"></div>
-  <div class="drawer-extra" id="installrow" hidden><button class="drawer-item" type="button" id="installbtn"></button></div>
+  <div class="drawer-body">
+    <div id="drawer-items"></div>
+    <div class="drawer-sec">設定與資料</div>
+    <div class="fs-row"><span id="fs-lbl"></span><div class="seg" id="fs-seg" role="group" aria-labelledby="fs-lbl"></div></div>
+    <button class="drawer-item" type="button" id="backupbtn"></button>
+    <button class="drawer-item" type="button" id="restorebtn"></button>
+    <input type="file" id="restorefile" accept=".json,application/json" hidden>
+    <button class="drawer-item" type="button" id="installbtn" hidden></button>
+  </div>
   <div class="drawer-foot">JR 智庫 · 取材自 JR Ridinger 27 篇演講逐字稿<br>零售 × 招募 × 異議處理</div>
 </aside>
 
@@ -753,6 +791,7 @@ body[data-view="chat"] #totop{display:none}
         <div class="trk-stat"><span>今日完成</span><b id="trk-done">0<small>/ 6</small></b></div>
         <div class="trk-stat"><span>連續打卡</span><b id="trk-streak">0<small>天</small></b></div>
         <div class="trk-stat"><span>全部完成</span><b id="trk-full">0<small>天</small></b></div>
+        <div class="trk-stat"><span id="trk-wklbl">本週展示</span><b id="trk-week">0<small>/ 2 次</small></b></div>
       </div>
       <div class="quote trk-fin" id="trk-fin" hidden><span>你已經走完瘋狂的 90 天！回頭看看進度圖，然後開始下一輪。</span><button class="abtn" type="button" id="trk-again">開始下一個 90 天</button></div>
       <div class="trk-ckhead" id="trk-ckhead"><h3 id="trk-ckttl">今天的基本功</h3><span id="trk-ckdate"></span></div>
@@ -762,7 +801,7 @@ body[data-view="chat"] #totop{display:none}
       <div id="daygrid"></div>
       <div class="trk-legend" aria-hidden="true">當日完成度：少 <i></i><i class="p1"></i><i class="p2"></i><i class="p3"></i> 多 <i class="today"></i> 今天</div>
       <p class="hint" style="margin:8px 0 0">忘了打卡？點進度圖上過去的日子就能補登。</p>
-      <div class="trk-foot"><button class="dangerbtn" type="button" id="trk-reset"></button></div>
+      <div class="trk-foot"><button class="dangerbtn safe" type="button" id="trk-backup"></button><button class="dangerbtn" type="button" id="trk-reset"></button></div>
     </div>
     <div class="card">
       <h3>JR 的每日基本功出處</h3>
@@ -1847,6 +1886,9 @@ const ICONS = {
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
  download:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+ upload:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/>',
+ type:'<path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/>',
+ arrow:'<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
@@ -1922,6 +1964,7 @@ function show(id,opt){
   document.body.dataset.view=id;
   curView=id;
   if(id==="fav")renderFav();
+  if(id==="search")renderToday();
   if(id==="tracker"){if(prev!=="tracker")trkSel=null;renderTracker();}
   /* 每次切換都記入瀏覽紀錄，手機「返回鍵」可回到上一頁 */
   if(opt.push!==false&&prev!==null&&location.hash!=="#"+id){try{history.pushState(null,"","#"+id);}catch(e){}}
@@ -2502,6 +2545,11 @@ function renderTracker(){
   $("#trk-done").innerHTML=doneOf(s,d)+"<small>/ "+CHECKS.length+"</small>";
   $("#trk-streak").innerHTML=streakOf(s,d)+"<small>天</small>";
   $("#trk-full").innerHTML=full+"<small>天</small>";
+  /* JR：每週展示計畫 1-2 次是最低標——以 90 天的第幾週計算 */
+  const wk=Math.floor((d-1)/7); let plans=0;
+  for(let i=wk*7+1;i<=Math.min(wk*7+7,90);i++)if((s.days[i]||{}).plan)plans++;
+  $("#trk-wklbl").textContent="第 "+(wk+1)+" 週展示";
+  $("#trk-week").innerHTML=plans+"<small>/ 2 次</small>";
   $("#trk-fin").hidden=raw<=90;
   const dt=dateOfDay(s,sel);
   $("#trk-ckhead").classList.toggle("past",past);
@@ -2548,6 +2596,8 @@ $("#trk-start").addEventListener("change",e=>{
 });
 $("#trk-back").addEventListener("click",()=>{trkSel=null;renderTracker();});
 $("#trk-reset").innerHTML=icon("refresh")+"重新開始 90 天";
+$("#trk-backup").innerHTML=icon("download")+"備份紀錄";
+$("#trk-backup").addEventListener("click",backupData);
 $("#trk-reset").addEventListener("click",resetTracker);
 $("#trk-again").addEventListener("click",resetTracker);
 
@@ -2616,9 +2666,100 @@ function renderFav(){
 }
 updFavCount();
 
+/* ---------- 首頁「今天」：每日金句 + 打卡進度 ---------- */
+let todayOff=0;
+function renderToday(){
+  let box=$("#today");
+  if(!box){box=el("div","today");box.id="today";$("#shortcuts").prepend(box);}
+  box.innerHTML="";
+  /* 每天換一則；步長與故事總數互質，169 天內不重複 */
+  const dayNo=Math.floor(todayMid().getTime()/86400000);
+  const i=((dayNo*37+todayOff)%STORIES.length+STORIES.length)%STORIES.length, it=STORIES[i];
+  const q=el("div","card today-q");
+  q.appendChild(el("span","answer-label",todayOff?"再來一則":"今日金句"));
+  q.appendChild(el("h3",null,icon("sparkle")+" "+it.t));
+  q.appendChild(el("div","quote serif",it.s));
+  q.appendChild(el("p",null,"<b>什麼時候用：</b>"+it.u));
+  q.appendChild(el("div","src","出處："+storySrcName(it.src)));
+  const row=actionRow("story",i,"【"+it.t+"】\n"+it.s+"\n\n什麼時候用："+it.u);
+  const nx=el("button","abtn",icon("refresh")+"換一則"); nx.type="button";
+  nx.addEventListener("click",()=>{todayOff++;renderToday();});
+  row.appendChild(nx); q.appendChild(row);
+  box.appendChild(q);
+  /* 打卡進度：沒開始過就不要偷偷幫他開始 */
+  const st=store.get("jr90",null);
+  const t=el("button","today-trk"); t.type="button";
+  if(st&&st.start){
+    const s=trkState(), d=dayNum(s);
+    t.innerHTML='<span class="answer-label">今日打卡</span><b>'+doneOf(s,d)+"<small>/ "+CHECKS.length+" 項</small></b>"+
+      '<div class="bar"><i style="width:'+Math.round(doneOf(s,d)/CHECKS.length*100)+'%"></i></div>'+
+      '<span class="tt">90 天的第 '+d+" 天 · 連續 "+streakOf(s,d)+" 天</span>"+
+      '<span class="go">'+(doneOf(s,d)>=CHECKS.length?"今天全數完成":"去打卡")+icon("arrow")+"</span>";
+  }else{
+    t.innerHTML='<span class="answer-label">90 天快速起步</span><b style="font-size:20px">還沒開始</b>'+
+      '<span class="tt">每天 6 項基本功，堆出瘋狂的 90 天</span><span class="go">開始打卡'+icon("arrow")+"</span>";
+  }
+  t.addEventListener("click",()=>show("tracker"));
+  box.appendChild(t);
+}
+
+/* ---------- 我的資料：備份 / 還原 ---------- */
+const DATA_KEYS=["jrfav","jr90","jrquiz","jrrecent","jrtheme","jrfont"];
+async function backupData(){
+  const data={}; DATA_KEYS.forEach(k=>{const v=store.get(k,null);if(v!=null)data[k]=v;});
+  const json=JSON.stringify({app:"jr-zhiku",v:1,at:new Date().toISOString(),data},null,1);
+  const name="jr-zhiku-backup-"+ymd(new Date())+".json"; /* 中文檔名在部分瀏覽器會變成 download */
+  closeMenu();
+  /* 手機優先用分享（可存到雲端硬碟、傳 LINE 給自己）；電腦直接下載 */
+  try{
+    const file=new File([json],name,{type:"application/json"});
+    if(!finePointer.matches&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:"JR 智庫備份"}); return;
+    }
+  }catch(e){if(e&&e.name==="AbortError")return;}
+  const a=el("a"); a.href=URL.createObjectURL(new Blob([json],{type:"application/json"})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("備份檔已下載，換手機時用「從備份還原」");
+}
+function restoreData(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let pkg=null; try{pkg=JSON.parse(rd.result);}catch(e){}
+    if(!pkg||pkg.app!=="jr-zhiku"||!pkg.data||typeof pkg.data!=="object"){toast("這不是 JR 智庫的備份檔");return;}
+    const when=pkg.at?fmtDate(new Date(pkg.at)):"";
+    if(!confirm("要用"+(when?" "+when+" 的":"")+"備份取代目前的收藏、打卡與測驗紀錄嗎？"))return;
+    DATA_KEYS.forEach(k=>{if(k in pkg.data)store.set(k,pkg.data[k]);});
+    try{sessionStorage.setItem("jrtoast","資料已還原");}catch(e){}
+    location.reload();
+  };
+  rd.readAsText(file);
+}
+$("#backupbtn").innerHTML=icon("download")+"<span>備份我的資料</span>";
+$("#backupbtn").addEventListener("click",backupData);
+$("#restorebtn").innerHTML=icon("upload")+"<span>從備份還原</span>";
+$("#restorebtn").addEventListener("click",()=>$("#restorefile").click());
+$("#restorefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(f){closeMenu();restoreData(f);}});
+try{const m=sessionStorage.getItem("jrtoast");if(m){sessionStorage.removeItem("jrtoast");setTimeout(()=>toast(m),300);}}catch(e){}
+
+/* ---------- 字級 ---------- */
+(function(){
+  $("#fs-lbl").innerHTML=icon("type")+"字級";
+  const seg=$("#fs-seg");
+  const apply=v=>{
+    if(v)document.documentElement.dataset.fs=v; else delete document.documentElement.dataset.fs;
+    seg.querySelectorAll("button").forEach((b,ix)=>{b.classList.toggle("on",ix===v);b.setAttribute("aria-pressed",ix===v?"true":"false");});
+  };
+  ["標準","大","特大"].forEach((l,ix)=>{
+    const b=el("button",null,l); b.type="button";
+    b.addEventListener("click",()=>{store.set("jrfont",ix||null);apply(ix);});
+    seg.appendChild(b);
+  });
+  const f=store.get("jrfont",0); apply(f===1||f===2?f:0);
+})();
+
 /* ---------- 加到主畫面 + 離線使用 ---------- */
 (function(){
-  const row=$("#installrow"), btn=$("#installbtn");
+  const btn=$("#installbtn"), row=btn;
   btn.innerHTML=icon("download")+"<span>加到手機主畫面</span>";
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
   const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);

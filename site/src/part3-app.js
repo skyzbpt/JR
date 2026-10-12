@@ -34,6 +34,9 @@ const ICONS = {
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
  download:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+ upload:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/>',
+ type:'<path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/>',
+ arrow:'<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
@@ -109,6 +112,7 @@ function show(id,opt){
   document.body.dataset.view=id;
   curView=id;
   if(id==="fav")renderFav();
+  if(id==="search")renderToday();
   if(id==="tracker"){if(prev!=="tracker")trkSel=null;renderTracker();}
   /* 每次切換都記入瀏覽紀錄，手機「返回鍵」可回到上一頁 */
   if(opt.push!==false&&prev!==null&&location.hash!=="#"+id){try{history.pushState(null,"","#"+id);}catch(e){}}
@@ -689,6 +693,11 @@ function renderTracker(){
   $("#trk-done").innerHTML=doneOf(s,d)+"<small>/ "+CHECKS.length+"</small>";
   $("#trk-streak").innerHTML=streakOf(s,d)+"<small>天</small>";
   $("#trk-full").innerHTML=full+"<small>天</small>";
+  /* JR：每週展示計畫 1-2 次是最低標——以 90 天的第幾週計算 */
+  const wk=Math.floor((d-1)/7); let plans=0;
+  for(let i=wk*7+1;i<=Math.min(wk*7+7,90);i++)if((s.days[i]||{}).plan)plans++;
+  $("#trk-wklbl").textContent="第 "+(wk+1)+" 週展示";
+  $("#trk-week").innerHTML=plans+"<small>/ 2 次</small>";
   $("#trk-fin").hidden=raw<=90;
   const dt=dateOfDay(s,sel);
   $("#trk-ckhead").classList.toggle("past",past);
@@ -735,6 +744,8 @@ $("#trk-start").addEventListener("change",e=>{
 });
 $("#trk-back").addEventListener("click",()=>{trkSel=null;renderTracker();});
 $("#trk-reset").innerHTML=icon("refresh")+"重新開始 90 天";
+$("#trk-backup").innerHTML=icon("download")+"備份紀錄";
+$("#trk-backup").addEventListener("click",backupData);
 $("#trk-reset").addEventListener("click",resetTracker);
 $("#trk-again").addEventListener("click",resetTracker);
 
@@ -803,9 +814,100 @@ function renderFav(){
 }
 updFavCount();
 
+/* ---------- 首頁「今天」：每日金句 + 打卡進度 ---------- */
+let todayOff=0;
+function renderToday(){
+  let box=$("#today");
+  if(!box){box=el("div","today");box.id="today";$("#shortcuts").prepend(box);}
+  box.innerHTML="";
+  /* 每天換一則；步長與故事總數互質，169 天內不重複 */
+  const dayNo=Math.floor(todayMid().getTime()/86400000);
+  const i=((dayNo*37+todayOff)%STORIES.length+STORIES.length)%STORIES.length, it=STORIES[i];
+  const q=el("div","card today-q");
+  q.appendChild(el("span","answer-label",todayOff?"再來一則":"今日金句"));
+  q.appendChild(el("h3",null,icon("sparkle")+" "+it.t));
+  q.appendChild(el("div","quote serif",it.s));
+  q.appendChild(el("p",null,"<b>什麼時候用：</b>"+it.u));
+  q.appendChild(el("div","src","出處："+storySrcName(it.src)));
+  const row=actionRow("story",i,"【"+it.t+"】\n"+it.s+"\n\n什麼時候用："+it.u);
+  const nx=el("button","abtn",icon("refresh")+"換一則"); nx.type="button";
+  nx.addEventListener("click",()=>{todayOff++;renderToday();});
+  row.appendChild(nx); q.appendChild(row);
+  box.appendChild(q);
+  /* 打卡進度：沒開始過就不要偷偷幫他開始 */
+  const st=store.get("jr90",null);
+  const t=el("button","today-trk"); t.type="button";
+  if(st&&st.start){
+    const s=trkState(), d=dayNum(s);
+    t.innerHTML='<span class="answer-label">今日打卡</span><b>'+doneOf(s,d)+"<small>/ "+CHECKS.length+" 項</small></b>"+
+      '<div class="bar"><i style="width:'+Math.round(doneOf(s,d)/CHECKS.length*100)+'%"></i></div>'+
+      '<span class="tt">90 天的第 '+d+" 天 · 連續 "+streakOf(s,d)+" 天</span>"+
+      '<span class="go">'+(doneOf(s,d)>=CHECKS.length?"今天全數完成":"去打卡")+icon("arrow")+"</span>";
+  }else{
+    t.innerHTML='<span class="answer-label">90 天快速起步</span><b style="font-size:20px">還沒開始</b>'+
+      '<span class="tt">每天 6 項基本功，堆出瘋狂的 90 天</span><span class="go">開始打卡'+icon("arrow")+"</span>";
+  }
+  t.addEventListener("click",()=>show("tracker"));
+  box.appendChild(t);
+}
+
+/* ---------- 我的資料：備份 / 還原 ---------- */
+const DATA_KEYS=["jrfav","jr90","jrquiz","jrrecent","jrtheme","jrfont"];
+async function backupData(){
+  const data={}; DATA_KEYS.forEach(k=>{const v=store.get(k,null);if(v!=null)data[k]=v;});
+  const json=JSON.stringify({app:"jr-zhiku",v:1,at:new Date().toISOString(),data},null,1);
+  const name="jr-zhiku-backup-"+ymd(new Date())+".json"; /* 中文檔名在部分瀏覽器會變成 download */
+  closeMenu();
+  /* 手機優先用分享（可存到雲端硬碟、傳 LINE 給自己）；電腦直接下載 */
+  try{
+    const file=new File([json],name,{type:"application/json"});
+    if(!finePointer.matches&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:"JR 智庫備份"}); return;
+    }
+  }catch(e){if(e&&e.name==="AbortError")return;}
+  const a=el("a"); a.href=URL.createObjectURL(new Blob([json],{type:"application/json"})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("備份檔已下載，換手機時用「從備份還原」");
+}
+function restoreData(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let pkg=null; try{pkg=JSON.parse(rd.result);}catch(e){}
+    if(!pkg||pkg.app!=="jr-zhiku"||!pkg.data||typeof pkg.data!=="object"){toast("這不是 JR 智庫的備份檔");return;}
+    const when=pkg.at?fmtDate(new Date(pkg.at)):"";
+    if(!confirm("要用"+(when?" "+when+" 的":"")+"備份取代目前的收藏、打卡與測驗紀錄嗎？"))return;
+    DATA_KEYS.forEach(k=>{if(k in pkg.data)store.set(k,pkg.data[k]);});
+    try{sessionStorage.setItem("jrtoast","資料已還原");}catch(e){}
+    location.reload();
+  };
+  rd.readAsText(file);
+}
+$("#backupbtn").innerHTML=icon("download")+"<span>備份我的資料</span>";
+$("#backupbtn").addEventListener("click",backupData);
+$("#restorebtn").innerHTML=icon("upload")+"<span>從備份還原</span>";
+$("#restorebtn").addEventListener("click",()=>$("#restorefile").click());
+$("#restorefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(f){closeMenu();restoreData(f);}});
+try{const m=sessionStorage.getItem("jrtoast");if(m){sessionStorage.removeItem("jrtoast");setTimeout(()=>toast(m),300);}}catch(e){}
+
+/* ---------- 字級 ---------- */
+(function(){
+  $("#fs-lbl").innerHTML=icon("type")+"字級";
+  const seg=$("#fs-seg");
+  const apply=v=>{
+    if(v)document.documentElement.dataset.fs=v; else delete document.documentElement.dataset.fs;
+    seg.querySelectorAll("button").forEach((b,ix)=>{b.classList.toggle("on",ix===v);b.setAttribute("aria-pressed",ix===v?"true":"false");});
+  };
+  ["標準","大","特大"].forEach((l,ix)=>{
+    const b=el("button",null,l); b.type="button";
+    b.addEventListener("click",()=>{store.set("jrfont",ix||null);apply(ix);});
+    seg.appendChild(b);
+  });
+  const f=store.get("jrfont",0); apply(f===1||f===2?f:0);
+})();
+
 /* ---------- 加到主畫面 + 離線使用 ---------- */
 (function(){
-  const row=$("#installrow"), btn=$("#installbtn");
+  const btn=$("#installbtn"), row=btn;
   btn.innerHTML=icon("download")+"<span>加到手機主畫面</span>";
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
   const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
