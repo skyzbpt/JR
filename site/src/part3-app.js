@@ -33,6 +33,7 @@ const ICONS = {
  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+ download:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
@@ -411,10 +412,34 @@ qIn.addEventListener("input",e=>{if(!e.isComposing)schedSearch();});
 qIn.addEventListener("compositionend",schedSearch);
 qIn.addEventListener("keydown",e=>{
   if(e.key!=="Enter"||e.isComposing)return;
-  clearTimeout(qTimer); doSearch();
+  clearTimeout(qTimer); doSearch(); addRecent(qIn.value);
   if(!finePointer.matches)qIn.blur();
 });
-$("#qbtn").addEventListener("click",()=>{clearTimeout(qTimer);doSearch();});
+$("#qbtn").addEventListener("click",()=>{clearTimeout(qTimer);doSearch();addRecent(qIn.value);});
+/* 邊打邊搜的半截字不記；離開搜尋框時才把有結果的查詢記進「最近搜尋」。
+   延後重畫，避免點結果卡片上的按鈕時，按鈕在點下去的瞬間被換掉 */
+qIn.addEventListener("blur",()=>{if(addRecent(qIn.value,true))setTimeout(renderRecent,400);});
+function addRecent(q,later){
+  q=String(q).trim();
+  if(!q||q.length>40||HOTQ.includes(q)||!searchAll(q).length)return false;
+  const r=store.get("jrrecent",[]).filter(x=>x!==q); r.unshift(q);
+  store.set("jrrecent",r.slice(0,6));
+  if(!later)renderRecent();
+  return true;
+}
+function renderRecent(){
+  const r=store.get("jrrecent",[]), box=$("#recentq"); box.innerHTML="";
+  $("#recent-row").hidden=!r.length;
+  r.forEach(q=>{
+    const b=el("button","chip"); b.type="button"; b.textContent=q;
+    b.addEventListener("click",()=>{qIn.value=q;doSearch();addRecent(q);});
+    box.appendChild(b);
+  });
+  const clr=el("button","link","清除"); clr.type="button";
+  clr.addEventListener("click",()=>{store.set("jrrecent",[]);renderRecent();});
+  box.appendChild(clr);
+}
+renderRecent();
 const qclear=$("#qclear");
 qclear.innerHTML=icon("close");
 qclear.addEventListener("click",()=>{qIn.value="";doSearch();qIn.focus();});
@@ -450,16 +475,34 @@ function qaDetails(it,i){
   d.appendChild(b);
   return d;
 }
+const objList=$("#obj-list"), objToggle=$("#obj-toggle");
+function updObjToggle(){
+  const ds=[...objList.querySelectorAll("details.qa")];
+  const allOpen=ds.length&&ds.every(d=>d.open);
+  objToggle.hidden=!ds.length;
+  objToggle.textContent=allOpen?"全部收合":"全部展開";
+}
 function renderObjections(filter){
-  const list=$("#obj-list");list.innerHTML="";
+  objList.innerHTML="";
   const pick=type=>QA.map((it,i)=>[it,i]).filter(([it])=>it.type===type&&(filter==="全部"||it.cat===filter));
+  let n=0;
   [["obj","對方的異議"],["coach","帶團隊的問題（輔導）"]].forEach(([type,label])=>{
     const items=pick(type); if(!items.length)return;
-    list.appendChild(el("div","secttl",label+"（"+items.length+"）"));
-    items.forEach(([it,i])=>list.appendChild(qaDetails(it,i)));
+    n+=items.length;
+    objList.appendChild(el("div","secttl",label+"（"+items.length+"）"));
+    items.forEach(([it,i])=>objList.appendChild(qaDetails(it,i)));
   });
-  if(!list.children.length)list.appendChild(el("div","empty","此分類目前沒有題目。"));
+  $("#obj-meta").innerHTML="共 <b>"+n+"</b> 題";
+  if(!n)objList.appendChild(el("div","empty","此分類目前沒有題目。"));
+  updObjToggle();
 }
+objList.addEventListener("toggle",updObjToggle,true);
+objToggle.addEventListener("click",()=>{
+  const ds=[...objList.querySelectorAll("details.qa")];
+  const open=!ds.every(d=>d.open);
+  ds.forEach(d=>d.open=open);
+  updObjToggle();
+});
 chipFilter($("#obj-filter"),["全部",...new Set(QA.map(x=>x.cat))],
   c=>QA.filter(x=>c==="全部"||x.cat===c).length, renderObjections);
 
@@ -759,6 +802,32 @@ function renderFav(){
   }
 }
 updFavCount();
+
+/* ---------- 加到主畫面 + 離線使用 ---------- */
+(function(){
+  const row=$("#installrow"), btn=$("#installbtn");
+  btn.innerHTML=icon("download")+"<span>加到手機主畫面</span>";
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  let deferred=null;
+  if(!standalone&&isIOS)row.hidden=false;
+  addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;row.hidden=false;});
+  addEventListener("appinstalled",()=>{row.hidden=true;deferred=null;toast("已加到主畫面，之後沒網路也能開");});
+  btn.addEventListener("click",async()=>{
+    if(deferred){
+      closeMenu(); deferred.prompt();
+      try{const r=await deferred.userChoice;if(r.outcome==="accepted")row.hidden=true;}catch(e){}
+      deferred=null;
+    }else{
+      closeMenu(); toast("在 Safari 點下方「分享」→「加入主畫面」");
+    }
+  });
+  /* 網站本身就是單一檔案，開著時斷網內容照常可用 */
+  addEventListener("offline",()=>toast("目前沒有網路，已載入的內容照常可用"));
+  if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&!/\/site\//.test(location.pathname)){
+    addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  }
+})();
 
 /* ---------- 啟動 ---------- */
 (function(){

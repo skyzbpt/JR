@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#cbe5f8" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0f2740" media="(prefers-color-scheme: dark)"><link rel="icon" type="image/png" href="assets/favicon.png"><link rel="apple-touch-icon" href="assets/logo.png"><meta name="description" content="美安創辦人 JR Ridinger 27 篇演講知識庫：零售、招募、異議處理問答">
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#cbe5f8" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0f2740" media="(prefers-color-scheme: dark)"><link rel="icon" type="image/png" href="assets/favicon.png"><link rel="apple-touch-icon" href="assets/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="JR 智庫"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="美安創辦人 JR Ridinger 27 篇演講知識庫：零售、招募、異議處理問答">
 <title>JR 智庫 — 美安事業問答知識庫</title>
 <script>try{var t=JSON.parse(localStorage.getItem("jrtheme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <style>
@@ -212,6 +212,8 @@ p.vd{color:var(--muted);margin:0 0 22px;font-size:15px;max-width:48em}
 .secttl::before{content:"";flex:0 0 auto;width:4px;height:15px;border-radius:2px;background:var(--grad)}
 .secttl::after{content:"";flex:1;height:1px;background:var(--line)}
 .list-top>.secttl:first-child{margin-top:6px}
+.listbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 0}
+.listbar .fmeta{margin:0}
 .hint{color:var(--muted);font-size:13.5px;margin-bottom:16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px}
 .grid2>.card{margin:0;display:flex;flex-direction:column}
@@ -287,9 +289,11 @@ summary.more:hover{color:var(--accent-hover)}
 .btn-primary:active,#qbtn:active{transform:translateY(1px)}
 .hint.hot{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0}
 .hot-lbl{flex:0 0 auto;padding-top:4px;font-weight:700;letter-spacing:1px;font-size:12.5px;color:var(--gold)}
-#hotq{display:flex;flex-wrap:wrap;gap:8px}
-#hotq .chip,#quickq .chip{background:var(--surface-2)}
-#hotq .chip:hover,#quickq .chip:hover{background:var(--accent-soft)}
+#hotq,#recentq{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#recent-row{margin-top:10px}
+#recentq .link{font-size:13px;color:var(--muted);margin-left:2px}
+#hotq .chip,#recentq .chip,#quickq .chip{background:var(--surface-2)}
+#hotq .chip:hover,#recentq .chip:hover,#quickq .chip:hover{background:var(--accent-soft)}
 #results{margin-top:6px}
 .sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:900px){.sc-grid{grid-template-columns:1fr 1fr}}
@@ -552,6 +556,7 @@ body[data-view="chat"] #totop{display:none}
 .drawer-item:hover{background:var(--surface-2)}
 .drawer-item.on{color:var(--accent);font-weight:700;background:var(--accent-soft)}
 .drawer-item .cnt{margin-left:auto}
+.drawer-extra{padding:6px 10px;border-top:1px solid var(--line)}
 .drawer-foot{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;line-height:1.6}
 
 /* ===================== 底部導覽（手機） ===================== */
@@ -653,6 +658,7 @@ body[data-view="chat"] #totop{display:none}
     <button id="drawer-close" aria-label="關閉選單"></button>
   </div>
   <div class="drawer-body" id="drawer-items"></div>
+  <div class="drawer-extra" id="installrow" hidden><button class="drawer-item" type="button" id="installbtn"></button></div>
   <div class="drawer-foot">JR 智庫 · 取材自 JR Ridinger 27 篇演講逐字稿<br>零售 × 招募 × 異議處理</div>
 </aside>
 
@@ -672,6 +678,7 @@ body[data-view="chat"] #totop{display:none}
         <button id="qbtn">搜尋</button>
       </div>
       <div class="hint hot"><span class="hot-lbl">熱門搜尋</span><span id="hotq"></span></div>
+      <div class="hint hot" id="recent-row" hidden><span class="hot-lbl">最近搜尋</span><span id="recentq"></span></div>
     </div>
     <div id="results"></div>
     <div id="shortcuts"></div>
@@ -682,7 +689,8 @@ body[data-view="chat"] #totop{display:none}
     <h2 class="vh">異議處理速查表</h2>
     <p class="vd">每一張卡片＝一個常見異議 ＋ JR 的回應方式 ＋ 背後邏輯 ＋ 可搭配的故事。點標籤可篩選。</p>
     <div class="tagrow" id="obj-filter"></div>
-    <div style="margin-top:18px" class="list-top" id="obj-list"></div>
+    <div class="listbar"><span class="fmeta" id="obj-meta"></span><button class="abtn" type="button" id="obj-toggle"></button></div>
+    <div class="list-top" id="obj-list"></div>
   </section>
 
   <!-- 主題瀏覽 -->
@@ -1839,6 +1847,7 @@ const ICONS = {
  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+ download:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
 };
 function icon(name,cls){return '<svg class="ic'+(cls?" "+cls:"")+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||"")+'</svg>';}
 
@@ -2217,10 +2226,34 @@ qIn.addEventListener("input",e=>{if(!e.isComposing)schedSearch();});
 qIn.addEventListener("compositionend",schedSearch);
 qIn.addEventListener("keydown",e=>{
   if(e.key!=="Enter"||e.isComposing)return;
-  clearTimeout(qTimer); doSearch();
+  clearTimeout(qTimer); doSearch(); addRecent(qIn.value);
   if(!finePointer.matches)qIn.blur();
 });
-$("#qbtn").addEventListener("click",()=>{clearTimeout(qTimer);doSearch();});
+$("#qbtn").addEventListener("click",()=>{clearTimeout(qTimer);doSearch();addRecent(qIn.value);});
+/* 邊打邊搜的半截字不記；離開搜尋框時才把有結果的查詢記進「最近搜尋」。
+   延後重畫，避免點結果卡片上的按鈕時，按鈕在點下去的瞬間被換掉 */
+qIn.addEventListener("blur",()=>{if(addRecent(qIn.value,true))setTimeout(renderRecent,400);});
+function addRecent(q,later){
+  q=String(q).trim();
+  if(!q||q.length>40||HOTQ.includes(q)||!searchAll(q).length)return false;
+  const r=store.get("jrrecent",[]).filter(x=>x!==q); r.unshift(q);
+  store.set("jrrecent",r.slice(0,6));
+  if(!later)renderRecent();
+  return true;
+}
+function renderRecent(){
+  const r=store.get("jrrecent",[]), box=$("#recentq"); box.innerHTML="";
+  $("#recent-row").hidden=!r.length;
+  r.forEach(q=>{
+    const b=el("button","chip"); b.type="button"; b.textContent=q;
+    b.addEventListener("click",()=>{qIn.value=q;doSearch();addRecent(q);});
+    box.appendChild(b);
+  });
+  const clr=el("button","link","清除"); clr.type="button";
+  clr.addEventListener("click",()=>{store.set("jrrecent",[]);renderRecent();});
+  box.appendChild(clr);
+}
+renderRecent();
 const qclear=$("#qclear");
 qclear.innerHTML=icon("close");
 qclear.addEventListener("click",()=>{qIn.value="";doSearch();qIn.focus();});
@@ -2256,16 +2289,34 @@ function qaDetails(it,i){
   d.appendChild(b);
   return d;
 }
+const objList=$("#obj-list"), objToggle=$("#obj-toggle");
+function updObjToggle(){
+  const ds=[...objList.querySelectorAll("details.qa")];
+  const allOpen=ds.length&&ds.every(d=>d.open);
+  objToggle.hidden=!ds.length;
+  objToggle.textContent=allOpen?"全部收合":"全部展開";
+}
 function renderObjections(filter){
-  const list=$("#obj-list");list.innerHTML="";
+  objList.innerHTML="";
   const pick=type=>QA.map((it,i)=>[it,i]).filter(([it])=>it.type===type&&(filter==="全部"||it.cat===filter));
+  let n=0;
   [["obj","對方的異議"],["coach","帶團隊的問題（輔導）"]].forEach(([type,label])=>{
     const items=pick(type); if(!items.length)return;
-    list.appendChild(el("div","secttl",label+"（"+items.length+"）"));
-    items.forEach(([it,i])=>list.appendChild(qaDetails(it,i)));
+    n+=items.length;
+    objList.appendChild(el("div","secttl",label+"（"+items.length+"）"));
+    items.forEach(([it,i])=>objList.appendChild(qaDetails(it,i)));
   });
-  if(!list.children.length)list.appendChild(el("div","empty","此分類目前沒有題目。"));
+  $("#obj-meta").innerHTML="共 <b>"+n+"</b> 題";
+  if(!n)objList.appendChild(el("div","empty","此分類目前沒有題目。"));
+  updObjToggle();
 }
+objList.addEventListener("toggle",updObjToggle,true);
+objToggle.addEventListener("click",()=>{
+  const ds=[...objList.querySelectorAll("details.qa")];
+  const open=!ds.every(d=>d.open);
+  ds.forEach(d=>d.open=open);
+  updObjToggle();
+});
 chipFilter($("#obj-filter"),["全部",...new Set(QA.map(x=>x.cat))],
   c=>QA.filter(x=>c==="全部"||x.cat===c).length, renderObjections);
 
@@ -2565,6 +2616,32 @@ function renderFav(){
   }
 }
 updFavCount();
+
+/* ---------- 加到主畫面 + 離線使用 ---------- */
+(function(){
+  const row=$("#installrow"), btn=$("#installbtn");
+  btn.innerHTML=icon("download")+"<span>加到手機主畫面</span>";
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  let deferred=null;
+  if(!standalone&&isIOS)row.hidden=false;
+  addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;row.hidden=false;});
+  addEventListener("appinstalled",()=>{row.hidden=true;deferred=null;toast("已加到主畫面，之後沒網路也能開");});
+  btn.addEventListener("click",async()=>{
+    if(deferred){
+      closeMenu(); deferred.prompt();
+      try{const r=await deferred.userChoice;if(r.outcome==="accepted")row.hidden=true;}catch(e){}
+      deferred=null;
+    }else{
+      closeMenu(); toast("在 Safari 點下方「分享」→「加入主畫面」");
+    }
+  });
+  /* 網站本身就是單一檔案，開著時斷網內容照常可用 */
+  addEventListener("offline",()=>toast("目前沒有網路，已載入的內容照常可用"));
+  if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&!/\/site\//.test(location.pathname)){
+    addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  }
+})();
 
 /* ---------- 啟動 ---------- */
 (function(){

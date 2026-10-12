@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | `favicon.png` | 瀏覽器分頁圖示 | 正方形 PNG，至少 64×64（建議 180×180） |
 | `logo.png` | 網站左上角 Logo | 高度約 68px 以上的 PNG（透明背景佳），寬度不限 |
+| `icon-192.png`、`icon-512.png` | 加到手機主畫面時的 App 圖示 | 由 `logo.png` 縮放產生的正方形 PNG；更換 logo 後請一併更新 |
 
 上傳方式：GitHub 網頁 → 進入 `assets/` 資料夾 → **Add file → Upload files** → 拖進來 → Commit。
 

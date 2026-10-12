@@ -211,6 +211,8 @@ p.vd{color:var(--muted);margin:0 0 22px;font-size:15px;max-width:48em}
 .secttl::before{content:"";flex:0 0 auto;width:4px;height:15px;border-radius:2px;background:var(--grad)}
 .secttl::after{content:"";flex:1;height:1px;background:var(--line)}
 .list-top>.secttl:first-child{margin-top:6px}
+.listbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 0}
+.listbar .fmeta{margin:0}
 .hint{color:var(--muted);font-size:13.5px;margin-bottom:16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px}
 .grid2>.card{margin:0;display:flex;flex-direction:column}
@@ -286,9 +288,11 @@ summary.more:hover{color:var(--accent-hover)}
 .btn-primary:active,#qbtn:active{transform:translateY(1px)}
 .hint.hot{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0}
 .hot-lbl{flex:0 0 auto;padding-top:4px;font-weight:700;letter-spacing:1px;font-size:12.5px;color:var(--gold)}
-#hotq{display:flex;flex-wrap:wrap;gap:8px}
-#hotq .chip,#quickq .chip{background:var(--surface-2)}
-#hotq .chip:hover,#quickq .chip:hover{background:var(--accent-soft)}
+#hotq,#recentq{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#recent-row{margin-top:10px}
+#recentq .link{font-size:13px;color:var(--muted);margin-left:2px}
+#hotq .chip,#recentq .chip,#quickq .chip{background:var(--surface-2)}
+#hotq .chip:hover,#recentq .chip:hover,#quickq .chip:hover{background:var(--accent-soft)}
 #results{margin-top:6px}
 .sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:900px){.sc-grid{grid-template-columns:1fr 1fr}}
@@ -551,6 +555,7 @@ body[data-view="chat"] #totop{display:none}
 .drawer-item:hover{background:var(--surface-2)}
 .drawer-item.on{color:var(--accent);font-weight:700;background:var(--accent-soft)}
 .drawer-item .cnt{margin-left:auto}
+.drawer-extra{padding:6px 10px;border-top:1px solid var(--line)}
 .drawer-foot{padding:14px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;line-height:1.6}
 
 /* ===================== 底部導覽（手機） ===================== */
@@ -652,6 +657,7 @@ body[data-view="chat"] #totop{display:none}
     <button id="drawer-close" aria-label="關閉選單"></button>
   </div>
   <div class="drawer-body" id="drawer-items"></div>
+  <div class="drawer-extra" id="installrow" hidden><button class="drawer-item" type="button" id="installbtn"></button></div>
   <div class="drawer-foot">JR 智庫 · 取材自 JR Ridinger 27 篇演講逐字稿<br>零售 × 招募 × 異議處理</div>
 </aside>
 
@@ -671,6 +677,7 @@ body[data-view="chat"] #totop{display:none}
         <button id="qbtn">搜尋</button>
       </div>
       <div class="hint hot"><span class="hot-lbl">熱門搜尋</span><span id="hotq"></span></div>
+      <div class="hint hot" id="recent-row" hidden><span class="hot-lbl">最近搜尋</span><span id="recentq"></span></div>
     </div>
     <div id="results"></div>
     <div id="shortcuts"></div>
@@ -681,7 +688,8 @@ body[data-view="chat"] #totop{display:none}
     <h2 class="vh">異議處理速查表</h2>
     <p class="vd">每一張卡片＝一個常見異議 ＋ JR 的回應方式 ＋ 背後邏輯 ＋ 可搭配的故事。點標籤可篩選。</p>
     <div class="tagrow" id="obj-filter"></div>
-    <div style="margin-top:18px" class="list-top" id="obj-list"></div>
+    <div class="listbar"><span class="fmeta" id="obj-meta"></span><button class="abtn" type="button" id="obj-toggle"></button></div>
+    <div class="list-top" id="obj-list"></div>
   </section>
 
   <!-- 主題瀏覽 -->
